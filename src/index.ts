@@ -1,4 +1,3 @@
-import express from 'express';
 import { config, validateConfig } from './config';
 import { initializeSlackApp } from './slack/slackApp';
 import { initializeSessionManager } from './agent/sessionManager';
@@ -16,18 +15,6 @@ async function main() {
     // Initialize Slack app
     console.log('Initializing Slack app...');
     const slackApp = await initializeSlackApp();
-
-    // Create Express app for health checks
-    const app = express();
-
-    // Health check endpoint
-    app.get('/health', (req, res) => {
-      res.status(200).json({
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-      });
-    });
 
     // Start Slack app (webhook mode)
     await slackApp.start(config.app.port);

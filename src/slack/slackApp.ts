@@ -10,6 +10,20 @@ export async function initializeSlackApp(): Promise<App> {
     socketMode: false,
   });
 
+  // Health check endpoint
+  app.use(async ({ payload, next }) => {
+    await next();
+  });
+
+  // Add custom route for health checks
+  (app as any).receiver.router.get('/health', (req: any, res: any) => {
+    res.status(200).json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+    });
+  });
+
   // Handle app mentions (@bot-name)
   app.event('app_mention', async ({ event, say, client }) => {
     // Acknowledge immediately (Slack requires response within 3 seconds)

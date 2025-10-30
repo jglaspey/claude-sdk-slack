@@ -16,9 +16,9 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
-// Slack events endpoint - Bolt handles this
+// Slack events endpoint - Bolt handles this at /slack/events internally
 // @ts-ignore - receiver.app is accessible but TypeScript doesn't recognize it
-app.use('/slack/events', slackApp.receiver.app);
+app.use(slackApp.receiver.app);
 
 // Start server
 app.listen(PORT, () => {

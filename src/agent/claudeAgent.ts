@@ -46,6 +46,14 @@ export async function queryAgent(
       console.log(`📎 Resuming session: ${sessionId}`);
     }
 
+    console.log('Agent options:', JSON.stringify({
+      model: options.model,
+      cwd: options.cwd,
+      maxTurns: options.maxTurns,
+      permissionMode: options.permissionMode,
+      allowedTools: options.allowedTools
+    }, null, 2));
+
     const response = query({
       prompt,
       options
@@ -109,6 +117,17 @@ export async function queryAgent(
 
   } catch (error) {
     console.error('Error querying Claude agent:', error);
+    console.error('Error details:', JSON.stringify(error, null, 2));
+
+    // Try to extract more details from the error
+    if (error && typeof error === 'object') {
+      const err = error as any;
+      if (err.stderr) console.error('Claude Code stderr:', err.stderr);
+      if (err.stdout) console.error('Claude Code stdout:', err.stdout);
+      if (err.code) console.error('Exit code:', err.code);
+      if (err.signal) console.error('Signal:', err.signal);
+    }
+
     throw new Error('Failed to get response from Claude agent');
   }
 }

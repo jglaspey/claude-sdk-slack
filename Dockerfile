@@ -6,6 +6,11 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
+# Configure git (required by Claude Code CLI)
+RUN git config --global user.name "Claude Agent" && \
+    git config --global user.email "agent@claude.ai" && \
+    git config --global init.defaultBranch main
+
 # Set working directory
 WORKDIR /app
 
@@ -27,12 +32,15 @@ RUN npm run build
 # Remove devDependencies after build to reduce image size
 RUN npm prune --production
 
-# Expose port
-EXPOSE 3000
+# Make startup script executable
+RUN chmod +x start.sh
+
+# Expose port (Railway sets PORT env var to 8080)
+EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+  CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 8080) + '/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start the application
-CMD ["npm", "start"]
+# Start the application with startup script
+CMD ["./start.sh"]

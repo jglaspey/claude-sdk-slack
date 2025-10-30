@@ -1,7 +1,8 @@
 // ABOUTME: Slack Bolt app initialization and event handlers
 // ABOUTME: Handles app_mention events and routes them to the Claude agent
 
-import { App, ExpressReceiver } from '@slack/bolt';
+import pkg from '@slack/bolt';
+const { App, ExpressReceiver } = pkg;
 import { SLACK_BOT_TOKEN, SLACK_SIGNING_SECRET } from '../config.js';
 import { handleMessage } from './messageHandler.js';
 

@@ -22,6 +22,7 @@ export async function queryAgent(
       model: 'claude-sonnet-4-5',
       maxTurns: 10, // Prevent infinite loops
       permissionMode: 'default',
+      cwd: '/tmp', // Working directory for the agent
       systemPrompt: {
         type: 'preset',
         preset: 'claude_code',

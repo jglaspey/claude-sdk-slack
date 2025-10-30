@@ -1,6 +1,11 @@
 # Use Node.js 18 as base image
 FROM node:18-slim
 
+# Install required dependencies for Claude Code CLI
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
 # Set working directory
 WORKDIR /app
 

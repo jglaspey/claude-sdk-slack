@@ -75,18 +75,5 @@ export async function initializeSlackApp(): Promise<App> {
     }
   });
 
-  // Add health check route to the underlying Express app
-  // @ts-ignore - accessing private receiver property
-  const receiver = app.receiver;
-  if (receiver && (receiver as any).app) {
-    (receiver as any).app.get('/health', (req: any, res: any) => {
-      res.status(200).json({
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-      });
-    });
-  }
-
   return app;
 }

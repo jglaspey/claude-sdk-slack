@@ -14,8 +14,18 @@ RUN git config --global user.name "Claude Agent" && \
 # Set working directory
 WORKDIR /app
 
+# Create session directory for Claude CLI
+RUN mkdir -p /app/.claude_sessions && \
+    chmod 755 /app/.claude_sessions
+
 # Install Claude Code CLI globally (required by Claude Agent SDK)
-RUN npm install -g @anthropic-ai/claude-code
+RUN npm install -g @anthropic-ai/claude-code && \
+    which claude && \
+    claude --version && \
+    echo "✅ Claude Code CLI installed successfully"
+
+# Set Claude session directory
+ENV CLAUDE_SESSION_DIR=/app/.claude_sessions
 
 # Copy package files
 COPY package*.json ./
@@ -34,6 +44,15 @@ RUN npm prune --production
 
 # Make startup script executable
 RUN chmod +x start.sh
+
+# Create non-root user to run the app (Claude CLI won't allow bypassPermissions as root)
+RUN useradd -m -u 1001 -s /bin/bash appuser && \
+    chown -R appuser:appuser /app && \
+    chown -R appuser:appuser /tmp && \
+    chown -R appuser:appuser /app/.claude_sessions
+
+# Switch to non-root user
+USER appuser
 
 # Expose port (Railway sets PORT env var to 8080)
 EXPOSE 8080

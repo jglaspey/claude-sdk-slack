@@ -21,8 +21,13 @@ export async function queryAgent(
     const options: any = {
       model: 'claude-sonnet-4-5',
       maxTurns: 10, // Prevent infinite loops
-      permissionMode: 'default',
+      permissionMode: 'bypassPermissions', // Skip permission prompts for automation
       cwd: '/tmp', // Working directory for the agent
+      pathToClaudeCodeExecutable: '/usr/local/bin/claude', // Explicit path to CLI (executable is 'claude' not 'claude-code')
+      // CRITICAL: Capture stderr to see actual CLI errors
+      stderr: (data: string) => {
+        console.error('🔴 Claude CLI stderr:', data);
+      },
       systemPrompt: {
         type: 'preset',
         preset: 'claude_code',

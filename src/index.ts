@@ -1,9 +1,13 @@
 import { config, validateConfig } from './config.js';
 import { initializeSlackApp } from './slack/slackApp.js';
 import { initializeSessionManager } from './agent/sessionManager.js';
+import { ensureClaudeUserSettings } from './utils/claudeSettings.js';
 
 async function main() {
   try {
+    // Configure Claude Code CLI for API key authentication
+    ensureClaudeUserSettings();
+    
     // Validate configuration
     console.log('Validating configuration...');
     validateConfig();

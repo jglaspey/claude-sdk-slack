@@ -55,6 +55,10 @@ export async function queryClaudeAgent(
       executable: 'node' as const,
       // Point to the CLI JS file (not a shell wrapper)
       pathToClaudeCodeExecutable: cliJs,
+      // Capture CLI stderr to see authentication errors
+      stderr: (data: string) => {
+        console.error('[claude-cli stderr]', data.trim());
+      },
       // Use Claude Code system prompt for best Slack bot behavior
       systemPrompt: {
         type: 'preset' as const,

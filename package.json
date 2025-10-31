@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.1.30",
-    "@anthropic-ai/claude-code": "^1.0.117",
+    "@anthropic-ai/claude-code": "1.0.67",
     "@slack/bolt": "^3.22.0",
     "better-sqlite3": "^11.7.0",
     "dotenv": "^16.4.7"

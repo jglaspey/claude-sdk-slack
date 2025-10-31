@@ -27,7 +27,6 @@ RUN npm install -g @anthropic-ai/claude-code
 RUN which node && which npm && which claude
 RUN node --version && npm --version
 RUN ls -la /usr/local/bin/claude
-RUN file /usr/local/bin/claude
 
 # Copy application code
 COPY . .

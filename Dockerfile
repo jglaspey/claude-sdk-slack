@@ -87,12 +87,16 @@ RUN test -x /app/claude && echo "wrapper executable in /app" || echo "wrapper no
 RUN ls -la /app/claude
 RUN cat /app/claude
 
-# Give appuser ownership of /app and /data for session storage
+# Give appuser ownership of /app
 RUN chown -R appuser:appuser /app
-RUN mkdir -p /data && chown -R appuser:appuser /data
 
-# Switch to non-root user
-USER appuser
+# Install su-exec for switching users in entrypoint
+RUN apt-get update && apt-get install -y su-exec && rm -rf /var/lib/apt/lists/*
 
-# Start the application
+# Copy and set up entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Start the application (entrypoint will fix permissions then switch to appuser)
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["/usr/local/bin/node", "dist/index.js"]

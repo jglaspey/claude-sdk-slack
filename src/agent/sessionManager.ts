@@ -63,15 +63,42 @@ class SessionManager {
   }
 
   private migrateSchema(): void {
-    // Check if agent_session_id column exists
+    // Check if we have the old schema with conversation_history column
     const tableInfo = this.db.pragma('table_info(slack_sessions)') as Array<{ name: string }>;
     console.log(`[SessionManager] Checking schema: found ${tableInfo.length} columns`);
 
+    const hasConversationHistory = tableInfo.some((col) => col.name === 'conversation_history');
     const hasAgentSessionId = tableInfo.some((col) => col.name === 'agent_session_id');
-    console.log(`[SessionManager] Has agent_session_id column: ${hasAgentSessionId}`);
 
-    if (!hasAgentSessionId) {
-      console.log('[SessionManager] Migrating database schema: adding agent_session_id column');
+    console.log(`[SessionManager] Has conversation_history (old): ${hasConversationHistory}`);
+    console.log(`[SessionManager] Has agent_session_id (new): ${hasAgentSessionId}`);
+
+    // If we have the old schema, recreate the table
+    if (hasConversationHistory && !hasAgentSessionId) {
+      console.log('[SessionManager] Detected old schema - recreating table with new schema');
+      this.db.exec(`
+        DROP TABLE IF EXISTS slack_sessions_old;
+        ALTER TABLE slack_sessions RENAME TO slack_sessions_old;
+
+        CREATE TABLE slack_sessions (
+          session_key TEXT PRIMARY KEY,
+          agent_session_id TEXT,
+          team_id TEXT NOT NULL,
+          channel_id TEXT,
+          user_id TEXT NOT NULL,
+          thread_ts TEXT,
+          created_at INTEGER NOT NULL,
+          last_active_at INTEGER NOT NULL,
+          message_count INTEGER DEFAULT 0
+        );
+
+        CREATE INDEX idx_last_active ON slack_sessions(last_active_at);
+
+        DROP TABLE slack_sessions_old;
+      `);
+      console.log('[SessionManager] Migration complete - old data cleared');
+    } else if (!hasAgentSessionId) {
+      console.log('[SessionManager] Adding agent_session_id column');
       this.db.exec('ALTER TABLE slack_sessions ADD COLUMN agent_session_id TEXT');
       console.log('[SessionManager] Migration complete');
     }

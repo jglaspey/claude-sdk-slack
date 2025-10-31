@@ -1,15 +1,28 @@
 import pkg from '@slack/bolt';
-const { App } = pkg;
+const { App, ExpressReceiver } = pkg;
 import type { App as AppType } from '@slack/bolt';
 import { config } from '../config.js';
 import { handleMessage } from './messageHandler.js';
+import type { Request, Response } from 'express';
 
 export async function initializeSlackApp(): Promise<AppType> {
+  // Create custom receiver to add health check endpoint
+  const receiver = new ExpressReceiver({
+    signingSecret: config.slack.signingSecret,
+  });
+
+  // Add health check endpoint
+  receiver.router.get('/health', (_req: Request, res: Response) => {
+    res.status(200).json({ 
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    });
+  });
+
   const app = new App({
     token: config.slack.botToken,
-    signingSecret: config.slack.signingSecret,
-    // Use webhook mode for Railway deployment
-    socketMode: false,
+    receiver,
   });
 
   // Handle app mentions (@bot-name)
@@ -35,15 +48,6 @@ export async function initializeSlackApp(): Promise<AppType> {
         thread_ts: event.thread_ts || event.ts,
       });
     }
-  });
-
-  // Health check endpoint for Railway
-  app.receiver.router.get('/health', (req, res) => {
-    res.status(200).json({ 
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime()
-    });
   });
 
   // Handle direct messages

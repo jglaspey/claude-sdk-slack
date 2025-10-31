@@ -34,7 +34,7 @@ function cleanMessageText(text: string): string {
 }
 
 /**
- * Handle incoming Slack message and query Claude
+ * Handle incoming Slack message and query Claude Agent SDK
  */
 export async function handleMessage(context: MessageContext): Promise<void> {
   const { client, channelId, threadTs } = context;
@@ -47,40 +47,41 @@ export async function handleMessage(context: MessageContext): Promise<void> {
   try {
     // Get or create session for this thread
     const sessionManager = getSessionManager();
-    const conversationHistory = await sessionManager.getOrCreateSession(sessionKey, {
+    const agentSessionId = await sessionManager.getOrCreateSession(sessionKey, {
       teamId: context.teamId,
       channelId: context.channelId,
       userId: context.userId,
       threadTs: context.threadTs,
     });
 
-    console.log(`[handleMessage] Using session: ${sessionKey} (history: ${conversationHistory.length} messages)`);
+    console.log(`[handleMessage] Agent session ID: ${agentSessionId || 'new session'}`);
 
     // Show typing indicator
-    // Note: Slack doesn't have a built-in typing indicator for bots
-    // We'll post a temporary "thinking" message and update it later
     const thinkingMessage = await client.chat.postMessage({
       channel: channelId,
       thread_ts: threadTs,
       text: '_Processing your request..._',
     });
 
-    // Query Claude Agent with conversation history
-    const fullResponse = await queryClaudeAgent(cleanText, conversationHistory);
-
-    // Update conversation history with this exchange
-    conversationHistory.push(
-      { role: 'user', content: cleanText },
-      { role: 'assistant', content: fullResponse }
+    // Query Claude Agent SDK
+    const { response, sessionId: newSessionId } = await queryClaudeAgent(
+      cleanText,
+      agentSessionId
     );
-    await sessionManager.updateSession(sessionKey, conversationHistory);
+
+    // Update session with Agent SDK session ID
+    if (newSessionId && newSessionId !== agentSessionId) {
+      await sessionManager.updateSessionId(sessionKey, newSessionId);
+    } else {
+      await sessionManager.updateSessionActivity(sessionKey);
+    }
 
     // Update the thinking message with the actual response
     if (thinkingMessage.ts) {
       await client.chat.update({
         channel: channelId,
         ts: thinkingMessage.ts,
-        text: fullResponse || 'I processed your request but have nothing to say.',
+        text: response || 'I processed your request but have nothing to say.',
       });
     }
 

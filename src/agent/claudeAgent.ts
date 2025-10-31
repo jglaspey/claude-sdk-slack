@@ -21,8 +21,8 @@ export async function queryClaudeAgent(
       resume: sessionId,
       // Bypass permissions for automated Slack bot
       permissionMode: 'bypassPermissions' as const,
-      // Point to the symlink - SDK might handle this differently
-      pathToClaudeCodeExecutable: '/usr/local/bin/claude',
+      // Point to the CLI in /app directory (guaranteed to persist)
+      pathToClaudeCodeExecutable: '/app/claude-code/cli.js',
       // Use Claude Code system prompt for best Slack bot behavior
       systemPrompt: {
         type: 'preset' as const,

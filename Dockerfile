@@ -23,10 +23,14 @@ RUN npm ci
 # Install Claude Code CLI globally
 RUN npm install -g @anthropic-ai/claude-code
 
+# Copy the globally installed claude-code to /app for runtime persistence
+RUN cp -r /usr/local/lib/node_modules/@anthropic-ai/claude-code /app/claude-code
+
 # Verify installations
 RUN which node && which npm && which claude
 RUN node --version && npm --version
 RUN ls -la /usr/local/bin/claude
+RUN ls -la /app/claude-code/cli.js
 
 # Copy application code
 COPY . .

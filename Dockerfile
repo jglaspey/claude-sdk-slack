@@ -13,8 +13,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install ALL dependencies (including devDependencies for TypeScript)
+RUN npm ci
 
 # Install Claude Code CLI globally
 RUN npm install -g @anthropic-ai/claude-code
@@ -22,8 +22,11 @@ RUN npm install -g @anthropic-ai/claude-code
 # Copy application code
 COPY . .
 
-# Build TypeScript (if needed, though we're committing dist/)
-# RUN npm run build
+# Build TypeScript
+RUN npm run build
+
+# Remove devDependencies to reduce image size
+RUN npm prune --production
 
 # Expose port
 EXPOSE 8080

@@ -21,8 +21,8 @@ export async function queryClaudeAgent(
       resume: sessionId,
       // Bypass permissions for automated Slack bot
       permissionMode: 'bypassPermissions' as const,
-      // Point to the shell wrapper in /app directory
-      pathToClaudeCodeExecutable: '/app/claude',
+      // DON'T set pathToClaudeCodeExecutable - let SDK find it automatically
+      // pathToClaudeCodeExecutable: '/app/claude',
       // Use Claude Code system prompt for best Slack bot behavior
       systemPrompt: {
         type: 'preset' as const,
@@ -53,9 +53,9 @@ export async function queryClaudeAgent(
       ],
     };
 
-    // Debug: Log the options being passed
+    // Debug: Log the options being passed (excluding pathToClaudeCodeExecutable - now using SDK default)
     console.log('[queryClaudeAgent] Options:', JSON.stringify({
-      pathToClaudeCodeExecutable: options.pathToClaudeCodeExecutable,
+      permissionMode: options.permissionMode,
       cwd: options.cwd,
       env: { PATH: options.env?.PATH }
     }, null, 2));

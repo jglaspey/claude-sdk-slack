@@ -23,12 +23,11 @@ RUN npm ci
 # Install Claude Code CLI globally
 RUN npm install -g @anthropic-ai/claude-code
 
-# Verify installations and show where claude is installed
-RUN which node && which npm && node --version && npm --version
-RUN which claude || echo "claude not in PATH, checking npm bin..."
-RUN npm bin -g
-RUN ls -la $(npm bin -g) | grep claude || echo "No claude binary found"
-RUN ls -la /usr/local/lib/node_modules/@anthropic-ai/claude-code/bin/ || echo "No bin directory"
+# Verify installations
+RUN which node && which npm && which claude
+RUN node --version && npm --version
+RUN ls -la /usr/local/bin/claude
+RUN file /usr/local/bin/claude
 
 # Copy application code
 COPY . .
@@ -38,6 +37,9 @@ RUN npm run build
 
 # Remove devDependencies to reduce image size
 RUN npm prune --production
+
+# Verify claude still exists after prune
+RUN which claude && ls -la /usr/local/bin/claude
 
 # Expose port
 EXPOSE 8080

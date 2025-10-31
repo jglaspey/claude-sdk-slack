@@ -31,6 +31,10 @@ RUN ls -la /usr/local/bin/claude
 # Copy application code
 COPY . .
 
+# Copy and install wrapper script
+COPY claude-wrapper.sh /usr/local/bin/claude-wrapper
+RUN chmod +x /usr/local/bin/claude-wrapper
+
 # Build TypeScript
 RUN npm run build
 

@@ -1,6 +1,6 @@
 #!/bin/bash
-# Wrapper script to run claude CLI with stdin redirected from /dev/null
+# Wrapper script to run claude CLI with explicit node path
 # This fixes the "spawn node ENOENT" issue in Docker containers
 
 exec </dev/null
-exec claude "$@"
+exec /usr/local/bin/node /usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js "$@"

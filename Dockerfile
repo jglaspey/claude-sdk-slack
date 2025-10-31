@@ -20,8 +20,8 @@ COPY package*.json ./
 # Install ALL dependencies (including devDependencies for TypeScript)
 RUN npm ci
 
-# Install Claude Code CLI globally
-RUN npm install -g @anthropic-ai/claude-code
+# Install Claude Code CLI and Agent SDK globally (like receipting/claude-agent-sdk-container)
+RUN npm install -g @anthropic-ai/claude-code @anthropic-ai/claude-agent-sdk
 
 # Copy the globally installed claude-code to /app for runtime persistence
 RUN cp -r /usr/local/lib/node_modules/@anthropic-ai/claude-code /app/claude-code

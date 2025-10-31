@@ -1,6 +1,6 @@
 import { WebClient } from '@slack/web-api';
-import { queryClaudeAgent } from '../agent/claudeAgent.js';
-import { getSessionManager } from '../agent/sessionManager.js';
+import { queryClaudeAgent } from '../agent/claudeAgent';
+import { getSessionManager } from '../agent/sessionManager';
 
 export interface MessageContext {
   text: string;

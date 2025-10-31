@@ -1,5 +1,4 @@
-import { query } from '@anthropic-ai/claude-agent-sdk';
-import { config } from '../config.js';
+import { config } from '../config';
 
 /**
  * Query Claude Agent SDK with a prompt
@@ -13,6 +12,9 @@ export async function queryClaudeAgent(
   console.log(`[queryClaudeAgent] Session ID: ${sessionId || 'new session'}`);
 
   try {
+    // Dynamic import for ES module compatibility
+    const { query } = await import('@anthropic-ai/claude-agent-sdk');
+
     // Configure Agent SDK options
     const options = {
       // Use session resumption if we have a session ID

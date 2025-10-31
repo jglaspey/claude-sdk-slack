@@ -1,6 +1,6 @@
 import { App } from '@slack/bolt';
-import { config } from '../config.js';
-import { handleMessage } from './messageHandler.js';
+import { config } from '../config';
+import { handleMessage } from './messageHandler';
 
 export async function initializeSlackApp(): Promise<App> {
   const app = new App({

@@ -31,12 +31,7 @@ export async function queryClaudeAgent(
       settingSources: [],
       // Set working directory to session data dir
       cwd: config.session.dataDir,
-      // Merge existing env with explicit values
-      env: {
-        ...process.env,
-        ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || '',
-        NODE_ENV: process.env.NODE_ENV || 'production',
-      },
+      // Don't set env - let SDK use process.env by default
       // Disable all file system tools since we're running as a service
       disallowedTools: [
         'Read',

@@ -74,8 +74,9 @@ class SessionManager {
     console.log(`[SessionManager] Has agent_session_id (new): ${hasAgentSessionId}`);
 
     // If we have the old conversation_history column, recreate the table
+    console.log(`[SessionManager] Migration check: hasConversationHistory=${hasConversationHistory}`);
     if (hasConversationHistory) {
-      console.log('[SessionManager] Detected old conversation_history column - recreating table');
+      console.log('[SessionManager] !!! MIGRATING DATABASE - RECREATING TABLE !!!');
       this.db.exec(`
         DROP TABLE IF EXISTS slack_sessions_old;
         ALTER TABLE slack_sessions RENAME TO slack_sessions_old;

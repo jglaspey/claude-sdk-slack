@@ -90,8 +90,8 @@ RUN cat /app/claude
 # Give appuser ownership of /app
 RUN chown -R appuser:appuser /app
 
-# Install su-exec for switching users in entrypoint
-RUN apt-get update && apt-get install -y su-exec && rm -rf /var/lib/apt/lists/*
+# Install gosu for switching users in entrypoint
+RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
 
 # Copy and set up entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/

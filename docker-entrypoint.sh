@@ -9,4 +9,4 @@ fi
 
 # Switch to appuser and run the application
 echo "[Entrypoint] Starting application as appuser..."
-exec su-exec appuser "$@"
+exec gosu appuser "$@"

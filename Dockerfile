@@ -59,6 +59,8 @@ RUN test -x /usr/local/bin/claude && echo "claude executable" || echo "claude no
 RUN test -f /app/claude-wrapper.sh && echo "wrapper exists in /app" || echo "wrapper missing from /app"
 RUN test -x /app/claude-wrapper.sh && echo "wrapper executable in /app" || echo "wrapper not executable in /app"
 RUN ls -la /app/claude-wrapper.sh
+RUN which sh && which bash || echo "bash not found"
+RUN head -1 /app/claude-wrapper.sh
 
 # Start the application
 CMD ["/usr/local/bin/node", "dist/index.js"]

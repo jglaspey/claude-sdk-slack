@@ -116,10 +116,22 @@ class SessionManager {
     const stmt = this.db.prepare('SELECT * FROM slack_sessions WHERE session_key = ?');
     const record = stmt.get(sessionKey) as SessionRecord | undefined;
 
-    if (record && record.agent_session_id) {
-      console.log(`[SessionManager] Found existing session: ${sessionKey}`);
-      console.log(`[SessionManager] Agent session ID: ${record.agent_session_id}`);
-      return record.agent_session_id;
+    if (record) {
+      if (record.agent_session_id) {
+        console.log(`[SessionManager] Found existing session: ${sessionKey}`);
+        console.log(`[SessionManager] Agent session ID: ${record.agent_session_id}`);
+        return record.agent_session_id;
+      } else {
+        // Record exists but no session ID yet - update timestamp and return undefined
+        console.log(`[SessionManager] Existing record found without session ID: ${sessionKey}`);
+        const updateStmt = this.db.prepare(`
+          UPDATE slack_sessions
+          SET last_active_at = ?
+          WHERE session_key = ?
+        `);
+        updateStmt.run(Date.now(), sessionKey);
+        return undefined;
+      }
     }
 
     // Create new session record (Agent SDK will generate session ID)

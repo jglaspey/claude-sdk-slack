@@ -21,6 +21,8 @@ async function main() {
 
     console.log(`⚡️ Slack bot is running on port ${config.app.port}`);
     console.log(`📊 Health check available at http://localhost:${config.app.port}/health`);
+    console.log(`🔍 PATH: ${process.env.PATH}`);
+    console.log(`🔍 NODE: ${process.env.NODE}`);
     console.log(`🤖 Claude Agent SDK ready`);
     console.log(`💾 Session data directory: ${config.session.dataDir}`);
 

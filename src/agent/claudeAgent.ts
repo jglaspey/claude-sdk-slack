@@ -33,7 +33,11 @@ export async function queryClaudeAgent(
       settingSources: [],
       // Set working directory to session data dir
       cwd: config.session.dataDir,
-      // Don't set env - let SDK use process.env by default
+      // Explicitly set PATH for spawned processes
+      env: {
+        ...process.env,
+        PATH: '/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin',
+      },
       // Disable all file system tools since we're running as a service
       disallowedTools: [
         'Read',

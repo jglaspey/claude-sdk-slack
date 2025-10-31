@@ -64,8 +64,12 @@ COPY api-key-helper.sh /usr/local/bin/api-key-helper.sh
 RUN chmod +x /usr/local/bin/api-key-helper.sh
 
 # Set up Claude Code settings to use apiKeyHelper instead of OAuth
+# Create both .claude.json (user config) and .claude/settings.json (project config)
 RUN mkdir -p /root/.claude && \
-    echo '{"apiKeyHelper":"/usr/local/bin/api-key-helper.sh","numStartups":1,"installMethod":"docker","autoUpdates":false,"hasCompletedOnboarding":true,"subscriptionNoticeCount":0,"hasAvailableSubscription":true}' > /root/.claude.json
+    echo '{"apiKeyHelper":"/usr/local/bin/api-key-helper.sh","numStartups":1,"installMethod":"docker","autoUpdates":false,"hasCompletedOnboarding":true,"subscriptionNoticeCount":0,"hasAvailableSubscription":true}' > /root/.claude.json && \
+    echo '{"apiKeyHelper":"/usr/local/bin/api-key-helper.sh"}' > /root/.claude/settings.json && \
+    cat /root/.claude.json && \
+    cat /root/.claude/settings.json
 
 # Verify at runtime that claude wrapper exists
 RUN test -f /app/claude && echo "wrapper exists in /app" || echo "wrapper missing from /app"

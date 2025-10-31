@@ -104,9 +104,10 @@ export async function queryClaudeAgent(
       options,
     });
 
-    // Collect the response
+    // Collect the response and capture any errors
     let fullResponse = '';
     let newSessionId = sessionId || '';
+    let hasError = false;
 
     for await (const message of result) {
       // Track session ID

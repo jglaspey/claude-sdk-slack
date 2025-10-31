@@ -54,10 +54,15 @@ RUN head -1 /usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js
 # Expose port
 EXPOSE 8080
 
+# Create non-root user for running the app
+RUN useradd -m -u 1000 appuser && \
+    mkdir -p /home/appuser/.claude && \
+    chown -R appuser:appuser /home/appuser
+
 # Set environment variables for runtime
 ENV NODE_ENV=production
 ENV NODE=/usr/local/bin/node
-ENV HOME=/root
+ENV HOME=/home/appuser
 
 # Copy API key helper script
 COPY api-key-helper.sh /usr/local/bin/api-key-helper.sh
@@ -81,6 +86,13 @@ RUN test -f /app/claude && echo "wrapper exists in /app" || echo "wrapper missin
 RUN test -x /app/claude && echo "wrapper executable in /app" || echo "wrapper not executable in /app"
 RUN ls -la /app/claude
 RUN cat /app/claude
+
+# Give appuser ownership of /app and /data for session storage
+RUN chown -R appuser:appuser /app
+RUN mkdir -p /data && chown -R appuser:appuser /data
+
+# Switch to non-root user
+USER appuser
 
 # Start the application
 CMD ["/usr/local/bin/node", "dist/index.js"]

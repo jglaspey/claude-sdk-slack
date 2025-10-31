@@ -29,7 +29,9 @@ export function ensureClaudeUserSettings(): void {
   settings.hasAvailableSubscription = true;
   
   // Write settings
-  fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+  const settingsJson = JSON.stringify(settings, null, 2);
+  fs.writeFileSync(settingsPath, settingsJson);
   console.log('[Claude Settings] Configured for API key authentication');
   console.log(`[Claude Settings] Settings file: ${settingsPath}`);
+  console.log(`[Claude Settings] Content: ${settingsJson}`);
 }

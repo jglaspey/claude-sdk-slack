@@ -55,7 +55,10 @@ export async function queryClaudeAgent(
       executable: 'node' as const,
       // Point to the CLI JS file (not a shell wrapper)
       pathToClaudeCodeExecutable: cliJs,
-      // Capture CLI stderr to see authentication errors
+      // Capture CLI stdout and stderr to see all output
+      stdout: (data: string) => {
+        console.log('[claude-cli stdout]', data.trim());
+      },
       stderr: (data: string) => {
         console.error('[claude-cli stderr]', data.trim());
       },

@@ -2,6 +2,7 @@
   "name": "slack-claude-bot",
   "version": "1.0.0",
   "description": "Interactive Slack bot powered by Claude Agent SDK",
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

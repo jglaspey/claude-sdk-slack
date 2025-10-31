@@ -53,6 +53,13 @@ export async function queryClaudeAgent(
       ],
     };
 
+    // Debug: Log the options being passed
+    console.log('[queryClaudeAgent] Options:', JSON.stringify({
+      pathToClaudeCodeExecutable: options.pathToClaudeCodeExecutable,
+      cwd: options.cwd,
+      env: { PATH: options.env?.PATH }
+    }, null, 2));
+
     // Query the Agent SDK
     const result = query({
       prompt,

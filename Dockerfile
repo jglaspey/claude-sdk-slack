@@ -57,6 +57,14 @@ EXPOSE 8080
 # Set environment variables for runtime
 ENV NODE_ENV=production
 ENV NODE=/usr/local/bin/node
+ENV HOME=/root
+
+# Set up Claude Code authentication at build time
+# This creates the credential files that the CLI expects
+RUN mkdir -p /root/.claude && \
+    echo '{"claudeAiOauth":{"accessToken":"placeholder","refreshToken":"placeholder","expiresAt":"2099-12-31T23:59:59.000Z","scopes":["read","write"],"subscriptionType":"pro"}}' > /root/.claude/.credentials.json && \
+    echo '{"numStartups":1,"installMethod":"docker","autoUpdates":false,"hasCompletedOnboarding":true,"subscriptionNoticeCount":0,"hasAvailableSubscription":true}' > /root/.claude.json && \
+    chmod 600 /root/.claude/.credentials.json /root/.claude.json
 
 # Verify at runtime that claude wrapper exists
 RUN test -f /app/claude && echo "wrapper exists in /app" || echo "wrapper missing from /app"

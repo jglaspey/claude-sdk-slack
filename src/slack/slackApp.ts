@@ -38,9 +38,8 @@ export async function initializeSlackApp(): Promise<AppType> {
   });
 
   // Health check endpoint for Railway
-  // @ts-ignore - accessing private receiver property for health check
-  app.receiver.router.get('/health', (req: any, res: any) => {
-    res.status(200).json({
+  app.receiver.router.get('/health', (req, res) => {
+    res.status(200).json({ 
       status: 'ok',
       timestamp: new Date().toISOString(),
       uptime: process.uptime()

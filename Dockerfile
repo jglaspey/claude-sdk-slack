@@ -37,14 +37,20 @@ RUN npm run build
 # Remove devDependencies to reduce image size
 RUN npm prune --production
 
-# Verify claude still exists after prune
+# Verify claude still exists after prune and check the actual file
 RUN which claude && ls -la /usr/local/bin/claude
+RUN ls -la /usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js
+RUN head -1 /usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js
 
 # Expose port
 EXPOSE 8080
 
 # Set environment variables for runtime
 ENV NODE_ENV=production
+
+# Verify at runtime that claude exists
+RUN test -f /usr/local/bin/claude && echo "claude exists" || echo "claude missing"
+RUN test -x /usr/local/bin/claude && echo "claude executable" || echo "claude not executable"
 
 # Start the application
 CMD ["node", "dist/index.js"]

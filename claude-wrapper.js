@@ -3,13 +3,20 @@
 // This bypasses shell script issues in Docker
 
 const { spawn } = require('child_process');
-const path = require('path');
 
-// Spawn the actual Claude CLI with all arguments
+// Use absolute path to node and CLI
+const nodePath = '/usr/local/bin/node';
 const cliPath = '/usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js';
-const child = spawn(process.execPath, [cliPath, ...process.argv.slice(2)], {
+
+// Ensure PATH includes /usr/local/bin
+const env = {
+  ...process.env,
+  PATH: '/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin'
+};
+
+const child = spawn(nodePath, [cliPath, ...process.argv.slice(2)], {
   stdio: 'inherit',
-  env: process.env
+  env: env
 });
 
 child.on('exit', (code) => {

@@ -25,6 +25,10 @@ RUN which node && which claude && node --version
 # Copy application code
 COPY . .
 
+# Copy and make wrapper script executable
+COPY claude-wrapper.sh /usr/local/bin/claude-wrapper
+RUN chmod +x /usr/local/bin/claude-wrapper
+
 # Build TypeScript
 RUN npm run build
 

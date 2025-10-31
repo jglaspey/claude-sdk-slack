@@ -68,8 +68,6 @@ export async function queryClaudeAgent(
         preset: 'claude_code' as const,
         append: 'You are responding in Slack. Keep responses concise and well-formatted for Slack messages. Use markdown formatting when appropriate.',
       },
-      // Don't load any filesystem settings - we're in the cloud
-      settingSources: [],
       // Set working directory to sessions dir (MUST exist!)
       cwd: sessionsDir,
       // Preserve full environment and ensure API key is set

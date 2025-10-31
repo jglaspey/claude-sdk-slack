@@ -31,11 +31,11 @@ export async function queryClaudeAgent(
       settingSources: [],
       // Set working directory to session data dir
       cwd: config.session.dataDir,
-      // Explicitly pass environment variables including API key
+      // Merge existing env with explicit values
       env: {
+        ...process.env,
         ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || '',
         NODE_ENV: process.env.NODE_ENV || 'production',
-        HOME: process.env.HOME || '/tmp',
       },
       // Disable all file system tools since we're running as a service
       disallowedTools: [

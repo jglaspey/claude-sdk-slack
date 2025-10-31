@@ -71,7 +71,12 @@ RUN mkdir -p /root/.claude && \
     cat /root/.claude.json && \
     cat /root/.claude/settings.json
 
-# Verify at runtime that claude wrapper exists
+# Test the CLI manually to see what error it gives
+# This will help us debug the exit code 1
+RUN echo "Testing CLI with mock API key..." && \
+    ANTHROPIC_API_KEY=sk-test-12345 /usr/local/bin/node /usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js --help || echo "CLI test failed with exit code $?"
+
+# Verify at runtime that claude wrapper exists  
 RUN test -f /app/claude && echo "wrapper exists in /app" || echo "wrapper missing from /app"
 RUN test -x /app/claude && echo "wrapper executable in /app" || echo "wrapper not executable in /app"
 RUN ls -la /app/claude

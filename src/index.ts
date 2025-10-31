@@ -43,3 +43,4 @@ process.on('SIGINT', () => {
 
 // Start the application
 main();
+// Force rebuild

@@ -47,10 +47,11 @@ EXPOSE 8080
 
 # Set environment variables for runtime
 ENV NODE_ENV=production
+ENV NODE=/usr/local/bin/node
 
 # Verify at runtime that claude exists
 RUN test -f /usr/local/bin/claude && echo "claude exists" || echo "claude missing"
 RUN test -x /usr/local/bin/claude && echo "claude executable" || echo "claude not executable"
 
 # Start the application
-CMD ["node", "dist/index.js"]
+CMD ["/usr/local/bin/node", "dist/index.js"]

@@ -24,6 +24,7 @@ interface SessionRecord {
 
 class SessionManager {
   private db: DatabaseConstructor.Database;
+  private static readonly SCHEMA_VERSION = 2; // Force rebuild v2
 
   constructor(dbPath: string) {
     // Ensure data directory exists
@@ -65,7 +66,7 @@ class SessionManager {
   private migrateSchema(): void {
     // Check if we have the old schema with conversation_history column
     const tableInfo = this.db.pragma('table_info(slack_sessions)') as Array<{ name: string }>;
-    console.log(`[SessionManager] Checking schema: found ${tableInfo.length} columns`);
+    console.log(`[SessionManager] SCHEMA CHECK v${SessionManager.SCHEMA_VERSION}: found ${tableInfo.length} columns`);
 
     const hasConversationHistory = tableInfo.some((col) => col.name === 'conversation_history');
     const hasAgentSessionId = tableInfo.some((col) => col.name === 'agent_session_id');
@@ -73,14 +74,14 @@ class SessionManager {
     console.log(`[SessionManager] Has conversation_history (old): ${hasConversationHistory}`);
     console.log(`[SessionManager] Has agent_session_id (new): ${hasAgentSessionId}`);
 
-    // If we have the old conversation_history column, recreate the table
-    console.log(`[SessionManager] Migration check: hasConversationHistory=${hasConversationHistory}`);
+    // If we have the old conversation_history column, DROP THE ENTIRE TABLE
     if (hasConversationHistory) {
-      console.log('[SessionManager] !!! MIGRATING DATABASE - RECREATING TABLE !!!');
-      this.db.exec(`
-        DROP TABLE IF EXISTS slack_sessions_old;
-        ALTER TABLE slack_sessions RENAME TO slack_sessions_old;
+      console.log('[SessionManager] >>> DETECTED OLD SCHEMA - DROPPING AND RECREATING TABLE <<<');
+      this.db.exec(`DROP TABLE IF EXISTS slack_sessions;`);
+      console.log('[SessionManager] >>> Old table dropped, recreating with new schema <<<');
 
+      // Recreate with new schema
+      this.db.exec(`
         CREATE TABLE slack_sessions (
           session_key TEXT PRIMARY KEY,
           agent_session_id TEXT,
@@ -94,14 +95,14 @@ class SessionManager {
         );
 
         CREATE INDEX idx_last_active ON slack_sessions(last_active_at);
-
-        DROP TABLE slack_sessions_old;
       `);
-      console.log('[SessionManager] Migration complete - old data cleared');
+      console.log('[SessionManager] >>> Migration complete - fresh database created <<<');
     } else if (!hasAgentSessionId) {
       console.log('[SessionManager] Adding agent_session_id column');
       this.db.exec('ALTER TABLE slack_sessions ADD COLUMN agent_session_id TEXT');
       console.log('[SessionManager] Migration complete');
+    } else {
+      console.log('[SessionManager] Schema is up to date');
     }
   }
 

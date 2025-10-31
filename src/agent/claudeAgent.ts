@@ -21,10 +21,8 @@ export async function queryClaudeAgent(
       resume: sessionId,
       // Bypass permissions for automated Slack bot
       permissionMode: 'bypassPermissions' as const,
-      // Use wrapper script that fixes stdin issue in Docker
-      pathToClaudeCodeExecutable: process.env.NODE_ENV === 'production'
-        ? '/usr/local/bin/claude-wrapper'
-        : undefined,
+      // Point to the globally installed Claude CLI
+      pathToClaudeCodeExecutable: '/usr/local/bin/claude',
       // Use Claude Code system prompt for best Slack bot behavior
       systemPrompt: {
         type: 'preset' as const,

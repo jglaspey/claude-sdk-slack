@@ -10,6 +10,10 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
+# Ensure node is in PATH for Claude Agent SDK
+ENV PATH="/usr/local/bin:$PATH"
+ENV NODE_PATH="/usr/local/lib/node_modules"
+
 # Copy package files
 COPY package*.json ./
 
@@ -19,15 +23,11 @@ RUN npm ci
 # Install Claude Code CLI globally
 RUN npm install -g @anthropic-ai/claude-code
 
-# Verify installations and create symlinks if needed
-RUN which node && which claude && node --version
+# Verify installations
+RUN which node && which npm && which claude && node --version && npm --version
 
 # Copy application code
 COPY . .
-
-# Copy and make wrapper script executable
-COPY claude-wrapper.sh /usr/local/bin/claude-wrapper
-RUN chmod +x /usr/local/bin/claude-wrapper
 
 # Build TypeScript
 RUN npm run build
@@ -38,5 +38,8 @@ RUN npm prune --production
 # Expose port
 EXPOSE 8080
 
+# Set environment variables for runtime
+ENV NODE_ENV=production
+
 # Start the application
-CMD ["npm", "start"]
+CMD ["node", "dist/index.js"]

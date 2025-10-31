@@ -54,8 +54,8 @@ RUN head -1 /usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js
 # Expose port
 EXPOSE 8080
 
-# Create non-root user for running the app
-RUN useradd -m -u 1000 appuser && \
+# Create non-root user for running the app (use UID 1001 to avoid conflicts)
+RUN useradd -m -u 1001 appuser && \
     mkdir -p /home/appuser/.claude && \
     chown -R appuser:appuser /home/appuser
 

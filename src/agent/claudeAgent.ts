@@ -29,6 +29,14 @@ export async function queryClaudeAgent(
       },
       // Don't load any filesystem settings - we're in the cloud
       settingSources: [],
+      // Set working directory to session data dir
+      cwd: config.session.dataDir,
+      // Explicitly pass environment variables including API key
+      env: {
+        ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || '',
+        NODE_ENV: process.env.NODE_ENV || 'production',
+        HOME: process.env.HOME || '/tmp',
+      },
       // Disable all file system tools since we're running as a service
       disallowedTools: [
         'Read',

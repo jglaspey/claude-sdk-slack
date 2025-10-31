@@ -15,6 +15,8 @@ export async function queryClaudeAgent(prompt, sessionId) {
             resume: sessionId,
             // Bypass permissions for automated Slack bot
             permissionMode: 'bypassPermissions',
+            // Explicitly set Node.js as the runtime
+            executable: 'node',
             // Use Claude Code system prompt for best Slack bot behavior
             systemPrompt: {
                 type: 'preset',

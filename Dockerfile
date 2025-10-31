@@ -19,6 +19,9 @@ RUN npm ci
 # Install Claude Code CLI globally
 RUN npm install -g @anthropic-ai/claude-code
 
+# Verify installations and create symlinks if needed
+RUN which node && which claude && node --version
+
 # Copy application code
 COPY . .
 

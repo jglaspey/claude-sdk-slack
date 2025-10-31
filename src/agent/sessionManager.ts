@@ -57,6 +57,20 @@ class SessionManager {
       CREATE INDEX IF NOT EXISTS idx_last_active
         ON slack_sessions(last_active_at);
     `);
+
+    // Migrate existing tables if needed
+    this.migrateSchema();
+  }
+
+  private migrateSchema(): void {
+    // Check if agent_session_id column exists
+    const tableInfo = this.db.pragma('table_info(slack_sessions)') as Array<{ name: string }>;
+    const hasAgentSessionId = tableInfo.some((col) => col.name === 'agent_session_id');
+
+    if (!hasAgentSessionId) {
+      console.log('[SessionManager] Migrating database schema: adding agent_session_id column');
+      this.db.exec('ALTER TABLE slack_sessions ADD COLUMN agent_session_id TEXT');
+    }
   }
 
   /**

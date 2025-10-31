@@ -23,8 +23,12 @@ RUN npm ci
 # Install Claude Code CLI globally
 RUN npm install -g @anthropic-ai/claude-code
 
-# Verify installations
-RUN which node && which npm && which claude && node --version && npm --version
+# Verify installations and show where claude is installed
+RUN which node && which npm && node --version && npm --version
+RUN which claude || echo "claude not in PATH, checking npm bin..."
+RUN npm bin -g
+RUN ls -la $(npm bin -g) | grep claude || echo "No claude binary found"
+RUN ls -la /usr/local/lib/node_modules/@anthropic-ai/claude-code/bin/ || echo "No bin directory"
 
 # Copy application code
 COPY . .

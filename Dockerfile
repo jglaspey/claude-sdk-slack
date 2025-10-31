@@ -53,9 +53,12 @@ EXPOSE 8080
 ENV NODE_ENV=production
 ENV NODE=/usr/local/bin/node
 
-# Verify at runtime that claude exists
+# Verify at runtime that claude and wrapper exist
 RUN test -f /usr/local/bin/claude && echo "claude exists" || echo "claude missing"
 RUN test -x /usr/local/bin/claude && echo "claude executable" || echo "claude not executable"
+RUN test -f /usr/local/bin/claude-wrapper && echo "wrapper exists" || echo "wrapper missing"
+RUN test -x /usr/local/bin/claude-wrapper && echo "wrapper executable" || echo "wrapper not executable"
+RUN ls -la /usr/local/bin/ | grep claude
 
 # Start the application
 CMD ["/usr/local/bin/node", "dist/index.js"]

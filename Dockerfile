@@ -59,12 +59,13 @@ ENV NODE_ENV=production
 ENV NODE=/usr/local/bin/node
 ENV HOME=/root
 
-# Set up Claude Code authentication at build time
-# This creates the credential files that the CLI expects
+# Copy API key helper script
+COPY api-key-helper.sh /usr/local/bin/api-key-helper.sh
+RUN chmod +x /usr/local/bin/api-key-helper.sh
+
+# Set up Claude Code settings to use apiKeyHelper instead of OAuth
 RUN mkdir -p /root/.claude && \
-    echo '{"claudeAiOauth":{"accessToken":"placeholder","refreshToken":"placeholder","expiresAt":"2099-12-31T23:59:59.000Z","scopes":["read","write"],"subscriptionType":"pro"}}' > /root/.claude/.credentials.json && \
-    echo '{"numStartups":1,"installMethod":"docker","autoUpdates":false,"hasCompletedOnboarding":true,"subscriptionNoticeCount":0,"hasAvailableSubscription":true}' > /root/.claude.json && \
-    chmod 600 /root/.claude/.credentials.json /root/.claude.json
+    echo '{"apiKeyHelper":"/usr/local/bin/api-key-helper.sh","numStartups":1,"installMethod":"docker","autoUpdates":false,"hasCompletedOnboarding":true,"subscriptionNoticeCount":0,"hasAvailableSubscription":true}' > /root/.claude.json
 
 # Verify at runtime that claude wrapper exists
 RUN test -f /app/claude && echo "wrapper exists in /app" || echo "wrapper missing from /app"

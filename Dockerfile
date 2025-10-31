@@ -35,9 +35,10 @@ RUN ls -la /app/claude-code/cli.js
 # Copy application code
 COPY . .
 
-# Copy Node.js wrapper to /app directory
-COPY claude-wrapper.js /app/claude-wrapper.js
-RUN chmod +x /app/claude-wrapper.js
+# Create a simple executable wrapper that calls node with absolute path
+RUN echo '#!/bin/sh' > /app/claude && \
+    echo 'exec /usr/local/bin/node /app/claude-code/cli.js "$@"' >> /app/claude && \
+    chmod +x /app/claude
 
 # Build TypeScript
 RUN npm run build
@@ -57,13 +58,11 @@ EXPOSE 8080
 ENV NODE_ENV=production
 ENV NODE=/usr/local/bin/node
 
-# Verify at runtime that claude and wrapper exist
-RUN test -f /usr/local/bin/claude && echo "claude exists" || echo "claude missing"
-RUN test -x /usr/local/bin/claude && echo "claude executable" || echo "claude not executable"
-RUN test -f /app/claude-wrapper.js && echo "wrapper exists in /app" || echo "wrapper missing from /app"
-RUN test -x /app/claude-wrapper.js && echo "wrapper executable in /app" || echo "wrapper not executable in /app"
-RUN ls -la /app/claude-wrapper.js
-RUN head -1 /app/claude-wrapper.js
+# Verify at runtime that claude wrapper exists
+RUN test -f /app/claude && echo "wrapper exists in /app" || echo "wrapper missing from /app"
+RUN test -x /app/claude && echo "wrapper executable in /app" || echo "wrapper not executable in /app"
+RUN ls -la /app/claude
+RUN cat /app/claude
 
 # Start the application
 CMD ["/usr/local/bin/node", "dist/index.js"]

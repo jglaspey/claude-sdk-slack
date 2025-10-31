@@ -19,8 +19,6 @@ export async function queryClaudeAgent(prompt, sessionId) {
             pathToClaudeCodeExecutable: process.env.NODE_ENV === 'production'
                 ? '/usr/local/bin/claude-wrapper'
                 : undefined,
-            // Explicitly set Node.js as the runtime
-            executable: 'node',
             // Use Claude Code system prompt for best Slack bot behavior
             systemPrompt: {
                 type: 'preset',

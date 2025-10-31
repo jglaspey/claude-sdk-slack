@@ -33,6 +33,15 @@ export async function initializeSlackApp() {
             });
         }
     });
+    // Health check endpoint for Railway
+    // @ts-ignore - accessing private receiver property for health check
+    app.receiver.router.get('/health', (req, res) => {
+        res.status(200).json({
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime()
+        });
+    });
     // Handle direct messages
     app.event('message', async ({ event, client }) => {
         // Filter out bot messages and message subtypes we don't want

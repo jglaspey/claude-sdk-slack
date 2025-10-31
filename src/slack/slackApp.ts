@@ -1,8 +1,10 @@
-import { App } from '@slack/bolt';
-import { config } from '../config';
-import { handleMessage } from './messageHandler';
+import pkg from '@slack/bolt';
+const { App } = pkg;
+import type { App as AppType } from '@slack/bolt';
+import { config } from '../config.js';
+import { handleMessage } from './messageHandler.js';
 
-export async function initializeSlackApp(): Promise<App> {
+export async function initializeSlackApp(): Promise<AppType> {
   const app = new App({
     token: config.slack.botToken,
     signingSecret: config.slack.signingSecret,

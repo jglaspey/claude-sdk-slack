@@ -1,7 +1,7 @@
-import Database from 'better-sqlite3';
+import DatabaseConstructor from 'better-sqlite3';
 import * as fs from 'fs';
 import * as path from 'path';
-import { config } from '../config';
+import { config } from '../config.js';
 
 interface SessionMetadata {
   teamId: string;
@@ -23,7 +23,7 @@ interface SessionRecord {
 }
 
 class SessionManager {
-  private db: Database.Database;
+  private db: DatabaseConstructor.Database;
 
   constructor(dbPath: string) {
     // Ensure data directory exists
@@ -33,7 +33,7 @@ class SessionManager {
     }
 
     // Initialize database
-    this.db = new Database(dbPath);
+    this.db = new DatabaseConstructor(dbPath);
     this.initializeSchema();
     this.startCleanupJob();
 

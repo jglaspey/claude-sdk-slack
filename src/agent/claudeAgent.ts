@@ -65,9 +65,11 @@ export async function queryClaudeAgent(
       settingSources: [],
       // Set working directory to sessions dir (MUST exist!)
       cwd: sessionsDir,
-      // Preserve full environment (includes PATH)
+      // Preserve full environment and ensure API key is set
       env: {
         ...process.env,
+        // Ensure ANTHROPIC_API_KEY is passed to CLI
+        ANTHROPIC_API_KEY: config.claude.apiKey,
       },
       // Disable all file system tools since we're running as a service
       disallowedTools: [
@@ -90,7 +92,10 @@ export async function queryClaudeAgent(
       pathToClaudeCodeExecutable: options.pathToClaudeCodeExecutable,
       cwd: options.cwd,
       cwdExists: fs.existsSync(options.cwd),
-      env: { PATH: options.env?.PATH }
+      env: { 
+        PATH: (options.env as any).PATH,
+        ANTHROPIC_API_KEY: options.env.ANTHROPIC_API_KEY ? '***' : 'missing'
+      }
     }, null, 2));
 
     // Query the Agent SDK

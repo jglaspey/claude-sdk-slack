@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import * as fs from 'fs';
 import * as path from 'path';
-import { config } from '../config';
+import { config } from '../config.js';
 
 interface SessionMetadata {
   teamId: string;

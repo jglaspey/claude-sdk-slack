@@ -1,5 +1,5 @@
 import { query } from '@anthropic-ai/claude-agent-sdk';
-import { config } from '../config';
+import { config } from '../config.js';
 
 /**
  * Query Claude Agent SDK with a prompt

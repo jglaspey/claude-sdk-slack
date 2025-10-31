@@ -1,6 +1,6 @@
-import { config, validateConfig } from './config';
-import { initializeSlackApp } from './slack/slackApp';
-import { initializeSessionManager } from './agent/sessionManager';
+import { config, validateConfig } from './config.js';
+import { initializeSlackApp } from './slack/slackApp.js';
+import { initializeSessionManager } from './agent/sessionManager.js';
 
 async function main() {
   try {

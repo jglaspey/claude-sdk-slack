@@ -31,9 +31,9 @@ RUN ls -la /usr/local/bin/claude
 # Copy application code
 COPY . .
 
-# Copy wrapper script to /app directory (guaranteed to persist)
-COPY claude-wrapper.sh /app/claude-wrapper.sh
-RUN chmod +x /app/claude-wrapper.sh
+# Copy Node.js wrapper to /app directory
+COPY claude-wrapper.js /app/claude-wrapper.js
+RUN chmod +x /app/claude-wrapper.js
 
 # Build TypeScript
 RUN npm run build
@@ -56,11 +56,10 @@ ENV NODE=/usr/local/bin/node
 # Verify at runtime that claude and wrapper exist
 RUN test -f /usr/local/bin/claude && echo "claude exists" || echo "claude missing"
 RUN test -x /usr/local/bin/claude && echo "claude executable" || echo "claude not executable"
-RUN test -f /app/claude-wrapper.sh && echo "wrapper exists in /app" || echo "wrapper missing from /app"
-RUN test -x /app/claude-wrapper.sh && echo "wrapper executable in /app" || echo "wrapper not executable in /app"
-RUN ls -la /app/claude-wrapper.sh
-RUN which sh && which bash || echo "bash not found"
-RUN head -1 /app/claude-wrapper.sh
+RUN test -f /app/claude-wrapper.js && echo "wrapper exists in /app" || echo "wrapper missing from /app"
+RUN test -x /app/claude-wrapper.js && echo "wrapper executable in /app" || echo "wrapper not executable in /app"
+RUN ls -la /app/claude-wrapper.js
+RUN head -1 /app/claude-wrapper.js
 
 # Start the application
 CMD ["/usr/local/bin/node", "dist/index.js"]

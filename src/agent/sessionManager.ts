@@ -65,11 +65,15 @@ class SessionManager {
   private migrateSchema(): void {
     // Check if agent_session_id column exists
     const tableInfo = this.db.pragma('table_info(slack_sessions)') as Array<{ name: string }>;
+    console.log(`[SessionManager] Checking schema: found ${tableInfo.length} columns`);
+
     const hasAgentSessionId = tableInfo.some((col) => col.name === 'agent_session_id');
+    console.log(`[SessionManager] Has agent_session_id column: ${hasAgentSessionId}`);
 
     if (!hasAgentSessionId) {
       console.log('[SessionManager] Migrating database schema: adding agent_session_id column');
       this.db.exec('ALTER TABLE slack_sessions ADD COLUMN agent_session_id TEXT');
+      console.log('[SessionManager] Migration complete');
     }
   }
 

@@ -99,4 +99,4 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Start the application (entrypoint will fix permissions then switch to appuser)
 # Use ENTRYPOINT with full command to ensure it runs
-ENTRYPOINT ["/bin/sh", "-c", "if [ -d /data ]; then chown -R appuser:appuser /data; fi && exec gosu appuser /usr/local/bin/node dist/index.js"]
+ENTRYPOINT ["/bin/sh", "-c", "echo '[Entrypoint] Running as:' && id && if [ -d /data ]; then echo '[Entrypoint] Fixing /data permissions...' && chown -R appuser:appuser /data; fi && echo '[Entrypoint] Switching to appuser...' && exec gosu appuser /usr/local/bin/node dist/index.js"]

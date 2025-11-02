@@ -2,6 +2,8 @@ import { WebClient } from '@slack/web-api';
 import { queryClaudeAgentStream } from '../agent/claudeAgent.js';
 import { getSessionManager } from '../agent/sessionManager.js';
 import { StreamingUpdater } from './streamingUpdater.js';
+import { ProgressIndicator } from './progressIndicator.js';
+import { config } from '../config.js';
 
 export interface MessageContext {
   text: string;
@@ -57,14 +59,22 @@ export async function handleMessage(context: MessageContext): Promise<void> {
 
     console.log(`[handleMessage] Agent session ID: ${agentSessionId || 'new session'}`);
 
-    // Show typing indicator
+    // Show initial message
     const thinkingMessage = await client.chat.postMessage({
       channel: channelId,
       thread_ts: threadTs,
-      text: '_Processing your request..._',
+      text: '⏳ _Processing your request..._',
     });
 
-    // Set up streaming updater
+    // Start progress indicator (updates every 5s with honest status)
+    const progressIndicator = new ProgressIndicator(
+      client,
+      channelId,
+      thinkingMessage.ts!
+    );
+    progressIndicator.start();
+
+    // Set up streaming updater (used once we get content)
     const updater = new StreamingUpdater(
       client,
       channelId,
@@ -72,37 +82,65 @@ export async function handleMessage(context: MessageContext): Promise<void> {
       3000 // Update every 3 seconds
     );
 
-    // Stream response from Claude Agent SDK
+    // Stream response from Claude Agent SDK with timeout protection
     let newSessionId = agentSessionId;
     let retryWithoutSession = false;
+    let hasContent = false;
 
     try {
-      let chunkCount = 0;
-      for await (const chunk of queryClaudeAgentStream(cleanText, agentSessionId)) {
-        if (chunk.type === 'content' && chunk.text) {
-          chunkCount++;
-          console.log(`[handleMessage] Received chunk ${chunkCount}: ${chunk.text.length} chars`);
-          // Add content and update Slack progressively
-          await updater.addContent(chunk.text);
-        }
+      // Create timeout promise
+      const timeoutMs = config.app.agentTimeoutSeconds * 1000;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Agent query timeout')), timeoutMs);
+      });
 
-        if (chunk.type === 'session' && chunk.sessionId) {
-          newSessionId = chunk.sessionId;
-        }
+      // Race between agent query and timeout
+      const processStream = (async () => {
+        let chunkCount = 0;
+        for await (const chunk of queryClaudeAgentStream(cleanText, agentSessionId)) {
+          if (chunk.type === 'content' && chunk.text) {
+            chunkCount++;
+            console.log(`[handleMessage] Received chunk ${chunkCount}: ${chunk.text.length} chars`);
+            
+            // Stop progress indicator on first content
+            if (!hasContent) {
+              progressIndicator.stop();
+              hasContent = true;
+            }
+            
+            // Add content and update Slack progressively
+            await updater.addContent(chunk.text);
+          }
 
-        if (chunk.type === 'complete') {
-          // Final update without "thinking" indicator
-          await updater.finalize();
-          
-          const stats = updater.getStats();
-          console.log(`[handleMessage] Stream complete - ${chunkCount} total chunks, ${stats.updateCount} updates, ${stats.contentLength} chars`);
+          if (chunk.type === 'session' && chunk.sessionId) {
+            newSessionId = chunk.sessionId;
+          }
+
+          if (chunk.type === 'complete') {
+            // Final update without "thinking" indicator
+            await updater.finalize();
+            
+            const stats = updater.getStats();
+            const elapsed = progressIndicator.getElapsedSeconds();
+            console.log(`[handleMessage] Stream complete - ${chunkCount} total chunks, ${stats.updateCount} updates, ${stats.contentLength} chars, ${elapsed}s elapsed`);
+          }
         }
-      }
+      })();
+
+      await Promise.race([processStream, timeoutPromise]);
     } catch (error: any) {
+      progressIndicator.stop(); // Always stop progress indicator on error
+      
+      // Check if it's a timeout
+      if (error.message?.includes('timeout')) {
+        throw new Error(`Query timed out after ${config.app.agentTimeoutSeconds} seconds. Please try a simpler question or break it into smaller parts.`);
+      }
+      
       // Check if it's a "session not found" error
       if (error.message?.includes('Session not found:')) {
         console.log(`[handleMessage] Session ${agentSessionId} not found, starting new session`);
         retryWithoutSession = true;
+        progressIndicator.start(); // Restart for retry
       } else {
         throw error; // Re-throw if it's a different error
       }
@@ -113,22 +151,34 @@ export async function handleMessage(context: MessageContext): Promise<void> {
       await sessionManager.deleteSession(sessionKey);
       console.log(`[handleMessage] Retrying without session ID`);
       
-      for await (const chunk of queryClaudeAgentStream(cleanText, undefined)) {
-        if (chunk.type === 'content' && chunk.text) {
-          await updater.addContent(chunk.text);
-        }
+      try {
+        for await (const chunk of queryClaudeAgentStream(cleanText, undefined)) {
+          if (chunk.type === 'content' && chunk.text) {
+            if (!hasContent) {
+              progressIndicator.stop();
+              hasContent = true;
+            }
+            await updater.addContent(chunk.text);
+          }
 
-        if (chunk.type === 'session' && chunk.sessionId) {
-          newSessionId = chunk.sessionId;
-        }
+          if (chunk.type === 'session' && chunk.sessionId) {
+            newSessionId = chunk.sessionId;
+          }
 
-        if (chunk.type === 'complete') {
-          await updater.finalize();
-          const stats = updater.getStats();
-          console.log(`[handleMessage] Stream complete (new session) - ${stats.updateCount} updates, ${stats.contentLength} chars`);
+          if (chunk.type === 'complete') {
+            await updater.finalize();
+            const stats = updater.getStats();
+            const elapsed = progressIndicator.getElapsedSeconds();
+            console.log(`[handleMessage] Stream complete (new session) - ${stats.updateCount} updates, ${stats.contentLength} chars, ${elapsed}s elapsed`);
+          }
         }
+      } finally {
+        progressIndicator.stop(); // Ensure we stop on retry too
       }
     }
+    
+    // Ensure progress indicator is stopped
+    progressIndicator.stop();
 
     // Update session with Agent SDK session ID
     if (newSessionId && newSessionId !== agentSessionId) {

@@ -13,6 +13,7 @@ export interface MessageContext {
   ts: string;
   teamId: string;
   client: WebClient;
+  fromAppMention?: boolean; // True if called from app_mention handler
 }
 
 /**
@@ -112,20 +113,23 @@ export async function handleMessage(context: MessageContext): Promise<void> {
     
     // For channel threads (not DMs), check if we have an existing session
     // If no session exists, it means bot was never @mentioned in this thread
-    // UNLESS this message itself contains a bot mention (handled by app_mention event)
     const isDM = context.channelId.startsWith('D');
     const hasBotMention = /<@[A-Z0-9]+>/.test(context.text);
     
-    if (!isDM && !hasBotMention) {
+    // If this is from the message handler (not app_mention) and has a bot mention, skip it
+    // Let app_mention handler deal with it to avoid duplicate processing
+    if (!context.fromAppMention && !isDM && hasBotMention) {
+      console.log(`[handleMessage] Skipping - has bot mention, letting app_mention handler process`);
+      return;
+    }
+    
+    // If not a DM and not from app_mention, check if we have a session for this thread
+    if (!isDM && !context.fromAppMention && !hasBotMention) {
       const existingSession = await sessionManager.findSession(sessionKey);
       if (!existingSession) {
         console.log(`[handleMessage] No session for thread ${sessionKey}, ignoring (bot not @mentioned)`);
         return; // Silently ignore - bot not part of this thread
       }
-    } else if (!isDM && hasBotMention) {
-      // Has bot mention - let app_mention handler deal with it
-      console.log(`[handleMessage] Skipping - has bot mention, letting app_mention handler process`);
-      return;
     }
     
     const agentSessionId = await sessionManager.getOrCreateSession(sessionKey, {

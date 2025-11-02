@@ -40,6 +40,7 @@ export async function initializeSlackApp(): Promise<AppType> {
         ts: event.ts,
         teamId: event.team || '',
         client,
+        fromAppMention: true, // Mark as coming from app_mention handler
       });
     } catch (error) {
       console.error('Error handling app mention:', error);

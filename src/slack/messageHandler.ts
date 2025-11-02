@@ -97,8 +97,7 @@ export async function handleMessage(context: MessageContext): Promise<void> {
       }
     } catch (error: any) {
       // Check if it's a "session not found" error
-      if (error.message?.includes('No conversation found with session ID') || 
-          error.message?.includes('session')) {
+      if (error.message?.includes('Session not found:')) {
         console.log(`[handleMessage] Session ${agentSessionId} not found, starting new session`);
         retryWithoutSession = true;
       } else {

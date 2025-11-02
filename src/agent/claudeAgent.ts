@@ -156,6 +156,16 @@ export async function* queryClaudeAgentStream(
     }
   } catch (error: any) {
     console.error('[queryClaudeAgent] Error querying Claude Agent SDK:', error);
+    
+    // Check if this is a session not found error and include that info
+    const errorMessage = error.message || '';
+    const isSessionError = errorMessage.includes('No conversation found') || 
+                          (errorMessage.includes('exited with code 1') && sessionId);
+    
+    if (isSessionError && sessionId) {
+      throw new Error(`Session not found: ${sessionId}`);
+    }
+    
     throw new Error(`Failed to query Claude: ${error.message}`);
   }
 }

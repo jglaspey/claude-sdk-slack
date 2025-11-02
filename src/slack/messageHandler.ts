@@ -1,6 +1,7 @@
 import { WebClient } from '@slack/web-api';
-import { queryClaudeAgent } from '../agent/claudeAgent.js';
+import { queryClaudeAgentStream } from '../agent/claudeAgent.js';
 import { getSessionManager } from '../agent/sessionManager.js';
+import { StreamingUpdater } from './streamingUpdater.js';
 
 export interface MessageContext {
   text: string;
@@ -63,26 +64,41 @@ export async function handleMessage(context: MessageContext): Promise<void> {
       text: '_Processing your request..._',
     });
 
-    // Query Claude Agent SDK
-    const { response, sessionId: newSessionId } = await queryClaudeAgent(
-      cleanText,
-      agentSessionId
+    // Set up streaming updater
+    const updater = new StreamingUpdater(
+      client,
+      channelId,
+      thinkingMessage.ts!,
+      3000 // Update every 3 seconds
     );
+
+    // Stream response from Claude Agent SDK
+    let newSessionId = agentSessionId;
+
+    for await (const chunk of queryClaudeAgentStream(cleanText, agentSessionId)) {
+      if (chunk.type === 'content' && chunk.text) {
+        // Add content and update Slack progressively
+        await updater.addContent(chunk.text);
+      }
+
+      if (chunk.type === 'session' && chunk.sessionId) {
+        newSessionId = chunk.sessionId;
+      }
+
+      if (chunk.type === 'complete') {
+        // Final update without "thinking" indicator
+        await updater.finalize();
+        
+        const stats = updater.getStats();
+        console.log(`[handleMessage] Stream complete - ${stats.updateCount} updates, ${stats.contentLength} chars`);
+      }
+    }
 
     // Update session with Agent SDK session ID
     if (newSessionId && newSessionId !== agentSessionId) {
       await sessionManager.updateSessionId(sessionKey, newSessionId);
     } else {
       await sessionManager.updateSessionActivity(sessionKey);
-    }
-
-    // Update the thinking message with the actual response
-    if (thinkingMessage.ts) {
-      await client.chat.update({
-        channel: channelId,
-        ts: thinkingMessage.ts,
-        text: response || 'I processed your request but have nothing to say.',
-      });
     }
 
     console.log(`[handleMessage] Successfully processed message for session: ${sessionKey}`);

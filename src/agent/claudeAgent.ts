@@ -24,13 +24,13 @@ function getSessionsDir(): string {
 }
 
 /**
- * Query Claude Agent SDK with a prompt
- * For Slack bot use, we use the Agent SDK in a stateless way
+ * Query Claude Agent SDK with a prompt and stream the response
+ * Returns an async generator that yields text chunks as they arrive
  */
-export async function queryClaudeAgent(
+export async function* queryClaudeAgentStream(
   prompt: string,
   sessionId?: string
-): Promise<{ response: string; sessionId: string }> {
+): AsyncGenerator<{ type: 'content' | 'session' | 'complete'; text?: string; sessionId?: string; stats?: any }> {
   console.log(`[queryClaudeAgent] Sending prompt to Claude Agent SDK`);
   console.log(`[queryClaudeAgent] Session ID: ${sessionId || 'new session'}`);
 
@@ -109,25 +109,26 @@ export async function queryClaudeAgent(
       options,
     });
 
-    // Collect the response and capture any errors
-    let fullResponse = '';
+    // Stream the response
     let newSessionId = sessionId || '';
-    let hasError = false;
+    let hasContent = false;
 
     for await (const message of result) {
       // Track session ID
       if (message.session_id) {
         newSessionId = message.session_id;
+        yield { type: 'session', sessionId: newSessionId };
       }
 
-      // Collect assistant messages
+      // Stream assistant messages as they arrive
       if (message.type === 'assistant') {
         // Extract text content from assistant message
         const textContent = message.message.content.find(
           (block: any) => block.type === 'text'
         );
         if (textContent && 'text' in textContent) {
-          fullResponse += textContent.text;
+          hasContent = true;
+          yield { type: 'content', text: textContent.text };
         }
       }
 
@@ -137,20 +138,49 @@ export async function queryClaudeAgent(
         console.log(`[queryClaudeAgent] Session: ${newSessionId}`);
         console.log(`[queryClaudeAgent] Cost: $${message.total_cost_usd}`);
         console.log(`[queryClaudeAgent] Turns: ${message.num_turns}`);
+        
+        yield {
+          type: 'complete',
+          sessionId: newSessionId,
+          stats: {
+            cost: message.total_cost_usd,
+            turns: message.num_turns,
+          },
+        };
       }
     }
 
-    if (!fullResponse) {
+    if (!hasContent) {
       console.warn('[queryClaudeAgent] No response text received');
-      fullResponse = 'I processed your request but have nothing to say.';
+      yield { type: 'content', text: 'I processed your request but have nothing to say.' };
     }
-
-    console.log(`[queryClaudeAgent] Response length: ${fullResponse.length} chars`);
-    console.log(`[queryClaudeAgent] Session ID: ${newSessionId}`);
-
-    return { response: fullResponse, sessionId: newSessionId };
   } catch (error: any) {
     console.error('[queryClaudeAgent] Error querying Claude Agent SDK:', error);
     throw new Error(`Failed to query Claude: ${error.message}`);
   }
+}
+
+/**
+ * Query Claude Agent SDK with a prompt (non-streaming version for backwards compatibility)
+ */
+export async function queryClaudeAgent(
+  prompt: string,
+  sessionId?: string
+): Promise<{ response: string; sessionId: string }> {
+  let fullResponse = '';
+  let finalSessionId = sessionId || '';
+
+  for await (const chunk of queryClaudeAgentStream(prompt, sessionId)) {
+    if (chunk.type === 'content' && chunk.text) {
+      fullResponse += chunk.text;
+    }
+    if (chunk.type === 'session' && chunk.sessionId) {
+      finalSessionId = chunk.sessionId;
+    }
+    if (chunk.type === 'complete' && chunk.sessionId) {
+      finalSessionId = chunk.sessionId;
+    }
+  }
+
+  return { response: fullResponse, sessionId: finalSessionId };
 }

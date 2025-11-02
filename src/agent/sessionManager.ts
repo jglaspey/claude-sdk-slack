@@ -224,12 +224,29 @@ class SessionManager {
    */
   private startCleanupJob(): void {
     const intervalMs = config.session.cleanupIntervalHours * 60 * 60 * 1000;
+    let consecutiveFailures = 0;
+    const MAX_FAILURES = 3;
 
     setInterval(() => {
       console.log('[SessionManager] Running cleanup job...');
-      this.cleanupInactiveSessions().catch((error) => {
-        console.error('[SessionManager] Cleanup job failed:', error);
-      });
+      this.cleanupInactiveSessions()
+        .then(() => {
+          consecutiveFailures = 0; // Reset on success
+        })
+        .catch((error) => {
+          consecutiveFailures++;
+          console.error(
+            `[SessionManager] Cleanup job failed (${consecutiveFailures}/${MAX_FAILURES}):`,
+            error
+          );
+
+          if (consecutiveFailures >= MAX_FAILURES) {
+            console.error(
+              '[SessionManager] Too many consecutive cleanup failures. Manual intervention may be needed.'
+            );
+            // Note: In production, you might want to send an alert here
+          }
+        });
     }, intervalMs);
 
     console.log(

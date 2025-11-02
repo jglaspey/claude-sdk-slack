@@ -9,7 +9,6 @@ export const config = {
   slack: {
     botToken: process.env.SLACK_BOT_TOKEN || '',
     signingSecret: process.env.SLACK_SIGNING_SECRET || '',
-    appToken: process.env.SLACK_APP_TOKEN || '',
   },
 
   // Claude Configuration
@@ -22,6 +21,8 @@ export const config = {
     port: parseInt(process.env.PORT || '3000', 10),
     nodeEnv: process.env.NODE_ENV || 'development',
     logLevel: process.env.LOG_LEVEL || 'info',
+    shutdownTimeoutSeconds: parseInt(process.env.SHUTDOWN_TIMEOUT_SECONDS || '30', 10),
+    agentTimeoutSeconds: parseInt(process.env.AGENT_TIMEOUT_SECONDS || '120', 10),
   },
 
   // Session Management

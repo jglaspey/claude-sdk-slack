@@ -1,6 +1,6 @@
 # Slack Claude Bot
 
-Interactive Slack bot powered by Claude AI with conversation memory and session management.
+Interactive Slack bot powered by Claude Agent SDK with conversation memory and session management.
 
 ## Features
 
@@ -11,12 +11,22 @@ Interactive Slack bot powered by Claude AI with conversation memory and session 
 - Automatic cleanup of inactive sessions
 - Health check endpoint for monitoring
 
+## Current Limitations
+
+**Note:** All Agent SDK tools are currently disabled for stability. The bot performs text-based reasoning only and cannot:
+- Read files or URLs
+- Execute code
+- Search the web
+- Use sub-agents
+
+See [docs/02_AGENT_SDK_ROADMAP.md](./docs/02_AGENT_SDK_ROADMAP.md) for planned feature additions.
+
 ## Architecture
 
 - **Slack Integration**: Uses `@slack/bolt` with webhook mode
-- **AI Integration**: Claude API with conversation history tracking
-- **Session Storage**: SQLite database for mapping Slack threads to conversations
-- **Deployment**: Railway with persistent volumes
+- **AI Integration**: Claude Agent SDK with session persistence
+- **Session Storage**: SQLite database for mapping Slack threads to Agent SDK sessions
+- **Deployment**: Docker on Railway with persistent volumes
 
 ## Setup
 
@@ -98,9 +108,10 @@ Subscribe to bot events:
 
 ## Session Management
 
-- Each Slack thread maintains its own conversation history
+- Each Slack thread maintains its own Agent SDK session
 - Sessions auto-cleanup after 24 hours of inactivity (configurable)
-- Conversation history stored in SQLite database
+- Session metadata stored in SQLite database
+- Agent SDK session files stored in `/data/.claude_sessions`
 - Survives Railway container restarts via persistent volume
 
 ## Project Structure

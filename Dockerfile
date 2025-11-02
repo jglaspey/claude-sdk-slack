@@ -14,11 +14,14 @@ WORKDIR /app
 ENV PATH="/usr/local/bin:$PATH"
 ENV NODE_PATH="/usr/local/lib/node_modules"
 
+# Suppress npm update notices
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
+
 # Copy package files
 COPY package*.json ./
 
 # Install ALL dependencies (including devDependencies for TypeScript)
-RUN npm ci
+RUN npm ci --no-fund
 
 # Install Claude Code CLI and Agent SDK globally (like receipting/claude-agent-sdk-container)
 RUN npm install -g @anthropic-ai/claude-code @anthropic-ai/claude-agent-sdk
@@ -93,10 +96,5 @@ RUN chown -R appuser:appuser /app
 # Install gosu for switching users in entrypoint
 RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
 
-# Copy and set up entrypoint script
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-# Start the application (entrypoint will fix permissions then switch to appuser)
-# Use ENTRYPOINT with full command to ensure it runs
+# Start the application (inline entrypoint fixes permissions then switches to appuser)
 ENTRYPOINT ["/bin/sh", "-c", "echo '[Entrypoint] Running as:' && id && if [ -d /data ]; then echo '[Entrypoint] Fixing /data permissions...' && chown -R appuser:appuser /data; fi && echo '[Entrypoint] Switching to appuser...' && exec gosu appuser /usr/local/bin/node dist/index.js"]

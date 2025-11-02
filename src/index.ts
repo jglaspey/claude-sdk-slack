@@ -46,11 +46,11 @@ async function shutdown(signal: string) {
   console.log(`\n${signal} received - starting graceful shutdown...`);
   
   try {
-    // Give ongoing operations 5 seconds to complete
+    // Give ongoing operations time to complete
     const timeout = setTimeout(() => {
       console.log('Shutdown timeout reached, forcing exit');
       process.exit(1);
-    }, 5000);
+    }, config.app.shutdownTimeoutSeconds * 1000);
     
     // Clean up resources here if needed
     // e.g., close database connections, finish in-flight requests

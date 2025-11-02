@@ -96,5 +96,21 @@ RUN chown -R appuser:appuser /app
 # Install gosu for switching users in entrypoint
 RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
 
-# Start the application (inline entrypoint fixes permissions then switches to appuser)
-ENTRYPOINT ["/bin/sh", "-c", "echo '[Entrypoint] Running as:' && id && if [ -d /data ]; then echo '[Entrypoint] Fixing /data permissions...' && chown -R appuser:appuser /data; fi && echo '[Entrypoint] Switching to appuser...' && exec gosu appuser /usr/local/bin/node dist/index.js"]
+# Create entrypoint script that sets up session symlink
+RUN echo '#!/bin/sh' > /entrypoint.sh && \
+    echo 'echo "[Entrypoint] Running as:" && id' >> /entrypoint.sh && \
+    echo 'if [ -d /data ]; then' >> /entrypoint.sh && \
+    echo '  echo "[Entrypoint] Fixing /data permissions..."' >> /entrypoint.sh && \
+    echo '  chown -R appuser:appuser /data' >> /entrypoint.sh && \
+    echo '  mkdir -p /data/.claude_sessions' >> /entrypoint.sh && \
+    echo 'fi' >> /entrypoint.sh && \
+    echo 'echo "[Entrypoint] Setting up Claude sessions symlink..."' >> /entrypoint.sh && \
+    echo 'su appuser -c "mkdir -p /home/appuser/.claude"' >> /entrypoint.sh && \
+    echo 'su appuser -c "ln -sfn /data/.claude_sessions /home/appuser/.claude/sessions"' >> /entrypoint.sh && \
+    echo 'echo "[Entrypoint] Symlink created: /home/appuser/.claude/sessions -> /data/.claude_sessions"' >> /entrypoint.sh && \
+    echo 'echo "[Entrypoint] Switching to appuser..."' >> /entrypoint.sh && \
+    echo 'exec gosu appuser /usr/local/bin/node dist/index.js' >> /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
+# Start the application
+ENTRYPOINT ["/entrypoint.sh"]

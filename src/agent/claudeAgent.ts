@@ -45,6 +45,11 @@ export async function* queryClaudeAgentStream(
     // Get and create sessions directory
     const sessionsDir = getSessionsDir();
     
+    // CRITICAL: Set CLAUDE_SESSION_DIR environment variable
+    // The Claude Code CLI uses this to determine where to store sessions
+    process.env.CLAUDE_SESSION_DIR = sessionsDir;
+    console.log(`[queryClaudeAgent] Set CLAUDE_SESSION_DIR=${sessionsDir}`);
+    
     // Debug: List what's in the sessions directory
     try {
       const files = fs.readdirSync(sessionsDir);

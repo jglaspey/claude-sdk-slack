@@ -104,8 +104,8 @@ Here's the content...
 • First point
 • Second point`,
       },
-      // Set working directory to sessions dir (MUST exist!)
-      cwd: sessionsDir,
+      // Set working directory to /app (CLI needs to run from a normal directory)
+      cwd: '/app',
       // Preserve full environment and ensure API key is set
       env: {
         ...process.env,

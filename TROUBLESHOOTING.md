@@ -76,11 +76,15 @@ function ensureClaudeUserSettings(): void {
   }));
 }
 
+// CRITICAL: Set session directory for Claude CLI
+const sessionsDir = getSessionsDir();
+process.env.CLAUDE_SESSION_DIR = sessionsDir;
+
 // SDK options
 const options = {
   executable: 'node', // Use node directly, not shebang
   pathToClaudeCodeExecutable: require.resolve('@anthropic-ai/claude-code/cli.js'),
-  cwd: getSessionsDir(), // Must exist before spawning!
+  cwd: sessionsDir, // Must exist before spawning!
   env: { ...process.env, ANTHROPIC_API_KEY: config.apiKey },
   stderr: (data) => console.error('[claude-cli stderr]', data),
   permissionMode: 'bypassPermissions',
@@ -133,6 +137,7 @@ mountPath = "/data"
 - ✅ Run as non-root user (bypasses permission restriction)
 - ✅ Fix volume permissions in entrypoint before switching users
 - ✅ **Remove `startCommand` from railway.toml** (critical!)
+- ✅ **Set `CLAUDE_SESSION_DIR` environment variable** (critical for session persistence!)
 
 ---
 
@@ -472,12 +477,49 @@ Error: Failed to spawn Claude Code process: spawn /app/claude ENOENT
 
 ---
 
-## Current Status
-**Blocked:** Unable to get the Claude Agent SDK to successfully spawn the Claude CLI in Railway's Docker environment, despite the CLI and all dependencies being present and verified during the build process.
+### 29. **Session Persistence Issue** ✅ **FIXED!**
+**Attempt:** Sessions were being created and resumed successfully (Turn count increased), but after redeployment, the Agent SDK couldn't find previous sessions.  
+**Result:** ✅ **SOLVED**  
+**Error:** `No conversation found with session ID: xxx` on every redeploy  
+**Diagnosis:**
+- SQLite database correctly persisted session IDs on Railway volume
+- But Agent SDK couldn't find the actual session files
+- Logging showed: `Sessions directory contains 0 items: []`
+- Sessions were being stored in a default temp location, not `/data/.claude_sessions`
 
-## Next Steps to Consider
-1. Test locally with Docker to see if the issue is Railway-specific
-2. Investigate Railway's container runtime vs build environment differences
-3. Contact Anthropic support about SDK spawn behavior in containerized environments
-4. Consider alternative deployment approaches (Nixpacks, different hosting platform)
-5. Explore if there's a way to bypass the SDK's spawn mechanism entirely
+**Root Cause:** The Claude Code CLI uses the `CLAUDE_SESSION_DIR` environment variable to determine where to store session files. Without this env var, sessions go to a default location (likely `/tmp` or `~/.claude/sessions`) which gets wiped on container restart.
+
+**Solution:** Set the environment variable before spawning the CLI:
+```typescript
+const sessionsDir = getSessionsDir(); // /data/.claude_sessions
+process.env.CLAUDE_SESSION_DIR = sessionsDir;
+```
+
+**Learning:** **CRITICAL:** The `cwd` parameter passed to the SDK does NOT control where sessions are stored. The Claude Code CLI specifically looks for the `CLAUDE_SESSION_DIR` environment variable. This must be set to point to your persistent volume for sessions to survive redeployments.
+
+**Verification:** After the fix, logs should show:
+```
+[queryClaudeAgent] Set CLAUDE_SESSION_DIR=/data/.claude_sessions
+[queryClaudeAgent] Sessions directory contains X items: [session files]
+[queryClaudeAgent] Session xxx file exists: true
+```
+
+---
+
+## Current Status
+✅ **FULLY OPERATIONAL!** All issues resolved:
+- ✅ CLI spawns successfully
+- ✅ Authentication works
+- ✅ Permissions correct
+- ✅ Database accessible
+- ✅ Bot responds in Slack
+- ✅ Sessions persist across redeployments
+
+## Lessons Learned Summary
+1. Node's `spawn()` throws misleading `ENOENT` when `cwd` doesn't exist
+2. Use `executable: 'node'` to bypass shebang PATH issues
+3. stderr/stdout capture is essential for debugging CLI errors
+4. SDK and CLI versions must be compatible
+5. CLI won't run `bypassPermissions` as root (security feature)
+6. Railway's `startCommand` completely bypasses Docker ENTRYPOINT
+7. **`CLAUDE_SESSION_DIR` env var is required for session persistence**

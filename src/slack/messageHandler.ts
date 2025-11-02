@@ -60,11 +60,16 @@ async function extractUserMentions(
 }
 
 /**
- * Remove bot mention from message text
+ * Remove bot mention from message text but keep user mentions
+ * We'll replace user mentions with names in handleMessage after we fetch user info
  */
-function cleanMessageText(text: string): string {
-  // Remove bot mention (e.g., "<@U123456789> hello" -> "hello")
-  return text.replace(/<@[A-Z0-9]+>/g, '').trim();
+function cleanBotMention(text: string, botUserId?: string): string {
+  if (botUserId) {
+    // Remove only the specific bot mention
+    return text.replace(new RegExp(`<@${botUserId}>`, 'g'), '').trim();
+  }
+  // Fallback: remove any bot-like mentions at the start
+  return text.replace(/^<@[A-Z0-9]+>\s*/, '').trim();
 }
 
 /**
@@ -73,30 +78,34 @@ function cleanMessageText(text: string): string {
 export async function handleMessage(context: MessageContext): Promise<void> {
   const { client, channelId, threadTs } = context;
   const sessionKey = getSessionKey(context);
-  const cleanText = cleanMessageText(context.text);
 
   console.log(`[handleMessage] Processing message for session: ${sessionKey}`);
-  console.log(`[handleMessage] Message text: ${cleanText}`);
 
   try {
-    // Extract user mentions from the message
+    // Extract user mentions from the message FIRST (before cleaning)
     const mentions = await extractUserMentions(context.text, client);
-    const mentionContext = mentions.length > 0
-      ? `\n\nNote: This message mentions: ${mentions.map(m => `@${m.name} (${m.realName})`).join(', ')}`
-      : '';
     
     if (mentions.length > 0) {
       console.log(`[handleMessage] Detected ${mentions.length} user mention(s):`, mentions.map(m => m.name));
     }
 
-    // Prepare prompt with mention context
-    const promptWithContext = cleanText + mentionContext;
+    // Clean bot mention but keep user mentions
+    let cleanText = cleanBotMention(context.text);
     
-    // Debug: Log the final prompt being sent
-    if (mentionContext) {
-      console.log(`[handleMessage] Adding mention context:`, mentionContext);
-      console.log(`[handleMessage] Final prompt:`, promptWithContext);
+    // Replace user mention IDs with readable names
+    for (const mention of mentions) {
+      cleanText = cleanText.replace(new RegExp(`<@${mention.id}>`, 'g'), `@${mention.name}`);
     }
+    
+    console.log(`[handleMessage] Message text: ${cleanText}`);
+
+    // Add context about who the mentioned users are
+    const mentionContext = mentions.length > 0
+      ? `\n\n(Note: ${mentions.map(m => `@${m.name} is ${m.realName}`).join(', ')})`
+      : '';
+
+    // Prepare prompt with inline mentions + context
+    const promptWithContext = cleanText + mentionContext;
 
     // Get or create session for this thread
     const sessionManager = getSessionManager();

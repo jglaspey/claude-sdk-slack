@@ -43,7 +43,8 @@ async function extractUserMentions(
     const userId = match[1];
     try {
       const userInfo = await client.users.info({ user: userId });
-      if (userInfo.user) {
+      if (userInfo.user && !userInfo.user.is_bot) {
+        // Only include real users, not bots
         mentions.push({
           id: userId,
           name: userInfo.user.name || 'unknown',
@@ -90,6 +91,12 @@ export async function handleMessage(context: MessageContext): Promise<void> {
 
     // Prepare prompt with mention context
     const promptWithContext = cleanText + mentionContext;
+    
+    // Debug: Log the final prompt being sent
+    if (mentionContext) {
+      console.log(`[handleMessage] Adding mention context:`, mentionContext);
+      console.log(`[handleMessage] Final prompt:`, promptWithContext);
+    }
 
     // Get or create session for this thread
     const sessionManager = getSessionManager();

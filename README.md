@@ -108,11 +108,42 @@ Subscribe to bot events:
 
 ## Session Management
 
-- Each Slack thread maintains its own Agent SDK session
-- Sessions auto-cleanup after 24 hours of inactivity (configurable)
-- Session metadata stored in SQLite database
+### Session Scope
+
+**Direct Messages:**
+- One continuous session per user (across all DM messages)
+- Session key: `{teamId}-{userId}-dm`
+- Context persists across the entire DM conversation
+- Use `/claude-reset` to start fresh (when implemented)
+
+**Channel Threads:**
+- One session per thread (isolated conversations)
+- Session key: `{teamId}-{channelId}-{threadTs}`
+- Each thread maintains separate context
+- Top-level @mentions create new sessions
+
+**Example:**
+```
+DM with @bot:
+  User: "Explain React"
+  [2 hours later]
+  User: "Give me examples"  ← Remembers React context
+
+Channel #dev, Thread A:
+  User1: "@bot explain Python"
+  User2: "@bot show syntax"  ← Remembers Python context
+  
+Channel #dev, Thread B:
+  User3: "@bot explain Rust"  ← NEW session, no Python context
+```
+
+### Persistence
+
+- Session metadata stored in SQLite database (`/data/sessions.db`)
 - Agent SDK session files stored in `/data/.claude_sessions`
+- Sessions auto-cleanup after 24 hours of inactivity (configurable)
 - Survives Railway container restarts via persistent volume
+- Gracefully handles missing session files after redeployments
 
 ## Project Structure
 

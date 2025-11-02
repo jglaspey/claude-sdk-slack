@@ -109,6 +109,18 @@ export async function handleMessage(context: MessageContext): Promise<void> {
 
     // Get or create session for this thread
     const sessionManager = getSessionManager();
+    
+    // For channel threads (not DMs), check if we have an existing session
+    // If no session exists, it means bot was never @mentioned in this thread
+    const isDM = context.channelId.startsWith('D');
+    if (!isDM) {
+      const existingSession = await sessionManager.findSession(sessionKey);
+      if (!existingSession) {
+        console.log(`[handleMessage] No session for thread ${sessionKey}, ignoring (bot not @mentioned)`);
+        return; // Silently ignore - bot not part of this thread
+      }
+    }
+    
     const agentSessionId = await sessionManager.getOrCreateSession(sessionKey, {
       teamId: context.teamId,
       channelId: context.channelId,

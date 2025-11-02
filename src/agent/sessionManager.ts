@@ -107,6 +107,14 @@ class SessionManager {
   }
 
   /**
+   * Check if a session exists (without creating one)
+   */
+  async findSession(sessionKey: string): Promise<SessionRecord | undefined> {
+    const stmt = this.db.prepare('SELECT * FROM slack_sessions WHERE session_key = ?');
+    return stmt.get(sessionKey) as SessionRecord | undefined;
+  }
+
+  /**
    * Get existing Agent SDK session ID or return undefined for new session
    */
   async getOrCreateSession(

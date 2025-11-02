@@ -50,7 +50,7 @@ export async function initializeSlackApp(): Promise<AppType> {
     }
   });
 
-  // Handle direct messages
+  // Handle direct messages and channel thread messages
   app.event('message', async ({ event, client }) => {
     // Filter out bot messages and message subtypes we don't want
     if (
@@ -63,12 +63,21 @@ export async function initializeSlackApp(): Promise<AppType> {
       return;
     }
 
-    // Only process DMs (channels starting with 'D')
-    if (!event.channel.startsWith('D')) {
+    const isDM = event.channel.startsWith('D');
+    const isThreadReply = event.thread_ts && event.thread_ts !== event.ts;
+
+    // Process if:
+    // 1. It's a DM, OR
+    // 2. It's a reply in a channel thread (not a top-level channel message)
+    if (!isDM && !isThreadReply) {
       return;
     }
 
-    console.log(`[message] Received DM from user ${event.user}`);
+    if (isDM) {
+      console.log(`[message] Received DM from user ${event.user}`);
+    } else {
+      console.log(`[message] Received thread reply from user ${event.user} in channel ${event.channel}`);
+    }
 
     try {
       await handleMessage({
@@ -81,7 +90,7 @@ export async function initializeSlackApp(): Promise<AppType> {
         client,
       });
     } catch (error) {
-      console.error('Error handling DM:', error);
+      console.error('Error handling message:', error);
       await client.chat.postMessage({
         channel: event.channel,
         text: 'Sorry, I encountered an error processing your message. Please try again.',

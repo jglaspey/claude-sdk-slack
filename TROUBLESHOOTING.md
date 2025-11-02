@@ -9,7 +9,7 @@ Deploy a Slack bot using the Claude Agent SDK in a Docker container on Railway, 
 
 **Status:** ✅ **SUCCESS! FULLY WORKING!** 🎉
 
-**Final Solution Achieved After 28 Attempts!**
+**Final Solution Achieved After 29 Attempts!**
 
 **All Issues Resolved:**
 - ✅ **Solved spawn ENOENT errors** (attempts 17-18)
@@ -21,6 +21,7 @@ Deploy a Slack bot using the Claude Agent SDK in a Docker container on Railway, 
 - ✅ **Database permissions fixed** (entrypoint script with gosu)
 - ✅ **Railway deployment working** (removed startCommand override)
 - ✅ **Bot responding in Slack** (full end-to-end success!)
+- ✅ **Session persistence working** (attempt 29 - `CLAUDE_SESSION_DIR` env var)
 
 **Key Insights:**
 1. The `spawn ENOENT` error was caused by an invalid `cwd`, not missing executables
@@ -30,8 +31,9 @@ Deploy a Slack bot using the Claude Agent SDK in a Docker container on Railway, 
 5. CLI refuses `bypassPermissions` when running as root (security feature)
 6. Railway volumes are root-owned and need permission fix at runtime
 7. **Railway's `startCommand` in railway.toml completely bypasses Docker ENTRYPOINT** (critical!)
+8. **`CLAUDE_SESSION_DIR` must be explicitly passed in child process env** - setting `process.env` isn't enough
 
-**Total Attempts:** 28 different approaches documented below
+**Total Attempts:** 29 different approaches documented below
 
 ---
 
@@ -85,7 +87,11 @@ const options = {
   executable: 'node', // Use node directly, not shebang
   pathToClaudeCodeExecutable: require.resolve('@anthropic-ai/claude-code/cli.js'),
   cwd: sessionsDir, // Must exist before spawning!
-  env: { ...process.env, ANTHROPIC_API_KEY: config.apiKey },
+  env: { 
+    ...process.env, 
+    ANTHROPIC_API_KEY: config.apiKey,
+    CLAUDE_SESSION_DIR: sessionsDir, // CRITICAL: Must explicitly pass to child process
+  },
   stderr: (data) => console.error('[claude-cli stderr]', data),
   permissionMode: 'bypassPermissions',
 };
@@ -489,13 +495,25 @@ Error: Failed to spawn Claude Code process: spawn /app/claude ENOENT
 
 **Root Cause:** The Claude Code CLI uses the `CLAUDE_SESSION_DIR` environment variable to determine where to store session files. Without this env var, sessions go to a default location (likely `/tmp` or `~/.claude/sessions`) which gets wiped on container restart.
 
-**Solution:** Set the environment variable before spawning the CLI:
+**Solution:** Explicitly pass `CLAUDE_SESSION_DIR` in the child process env:
 ```typescript
 const sessionsDir = getSessionsDir(); // /data/.claude_sessions
+
+// Setting process.env alone isn't enough!
 process.env.CLAUDE_SESSION_DIR = sessionsDir;
+
+// MUST also pass it explicitly in the env object:
+const options = {
+  // ... other options
+  env: {
+    ...process.env,
+    ANTHROPIC_API_KEY: config.apiKey,
+    CLAUDE_SESSION_DIR: sessionsDir, // ← CRITICAL!
+  },
+};
 ```
 
-**Learning:** **CRITICAL:** The `cwd` parameter passed to the SDK does NOT control where sessions are stored. The Claude Code CLI specifically looks for the `CLAUDE_SESSION_DIR` environment variable. This must be set to point to your persistent volume for sessions to survive redeployments.
+**Learning:** **CRITICAL:** The `cwd` parameter passed to the SDK does NOT control where sessions are stored. The Claude Code CLI specifically looks for the `CLAUDE_SESSION_DIR` environment variable. Setting `process.env.CLAUDE_SESSION_DIR` in the parent process is not sufficient - it must be **explicitly passed in the `env` object** to the spawned child process for sessions to survive redeployments.
 
 **Verification:** After the fix, logs should show:
 ```

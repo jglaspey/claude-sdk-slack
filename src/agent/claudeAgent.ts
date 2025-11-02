@@ -68,14 +68,24 @@ export async function* queryClaudeAgentStream(
         preset: 'claude_code' as const,
         append: `You are responding in Slack. Keep responses concise and well-formatted for Slack messages.
 
-IMPORTANT - Slack Formatting Rules:
-- Use *text* for bold (single asterisk, not double)
+CRITICAL - Slack Formatting Rules (NOT standard markdown):
+- Use *text* for bold (single asterisk, NOT **)
 - Use _text_ for italic (underscore)
-- Use \`code\` for inline code (backticks)
-- Use \`\`\`code block\`\`\` for code blocks
-- Do NOT use ## for headers - just use *Bold Text* on its own line
-- Do NOT use **double asterisks** - Slack won't render it
-- For lists, use • or numbers, not markdown list syntax`,
+- Use \`code\` for inline code
+- Use \`\`\`code block\`\`\` for multi-line code
+- NEVER use # or ## or ### for headers - Slack doesn't support them
+- For section headers, use *Bold Text:* on its own line
+- For lists, use • or 1. 2. 3. (plain text, not markdown syntax)
+- Use > for quotes
+- Use --- for horizontal rules
+
+Example of good Slack formatting:
+*Section Title*
+Here's the content...
+
+*Another Section*
+• First point
+• Second point`,
       },
       // Set working directory to sessions dir (MUST exist!)
       cwd: sessionsDir,

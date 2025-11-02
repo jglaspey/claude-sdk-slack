@@ -27,10 +27,17 @@ export class StreamingUpdater {
     this.accumulated += content;
 
     const now = Date.now();
-    if (now - this.lastUpdateTime >= this.updateIntervalMs) {
+    const timeSinceLastUpdate = now - this.lastUpdateTime;
+    
+    console.log(`[StreamingUpdater] Added ${content.length} chars, total: ${this.accumulated.length}, time since last update: ${timeSinceLastUpdate}ms`);
+    
+    if (timeSinceLastUpdate >= this.updateIntervalMs) {
+      console.log(`[StreamingUpdater] Triggering update #${this.updateCount + 1}`);
       await this.update(true); // With "still thinking" indicator
       this.lastUpdateTime = now;
       this.updateCount++;
+    } else {
+      console.log(`[StreamingUpdater] Skipping update (need ${this.updateIntervalMs - timeSinceLastUpdate}ms more)`);
     }
   }
 

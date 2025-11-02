@@ -77,8 +77,11 @@ export async function handleMessage(context: MessageContext): Promise<void> {
     let retryWithoutSession = false;
 
     try {
+      let chunkCount = 0;
       for await (const chunk of queryClaudeAgentStream(cleanText, agentSessionId)) {
         if (chunk.type === 'content' && chunk.text) {
+          chunkCount++;
+          console.log(`[handleMessage] Received chunk ${chunkCount}: ${chunk.text.length} chars`);
           // Add content and update Slack progressively
           await updater.addContent(chunk.text);
         }
@@ -92,7 +95,7 @@ export async function handleMessage(context: MessageContext): Promise<void> {
           await updater.finalize();
           
           const stats = updater.getStats();
-          console.log(`[handleMessage] Stream complete - ${stats.updateCount} updates, ${stats.contentLength} chars`);
+          console.log(`[handleMessage] Stream complete - ${chunkCount} total chunks, ${stats.updateCount} updates, ${stats.contentLength} chars`);
         }
       }
     } catch (error: any) {

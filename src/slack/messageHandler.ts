@@ -29,6 +29,36 @@ function getSessionKey(context: MessageContext): string {
 }
 
 /**
+ * Extract user mentions from message text
+ */
+async function extractUserMentions(
+  text: string,
+  client: WebClient
+): Promise<Array<{ id: string; name: string; realName: string }>> {
+  const mentionPattern = /<@(U[A-Z0-9]+)>/g;
+  const mentions: Array<{ id: string; name: string; realName: string }> = [];
+
+  let match;
+  while ((match = mentionPattern.exec(text)) !== null) {
+    const userId = match[1];
+    try {
+      const userInfo = await client.users.info({ user: userId });
+      if (userInfo.user) {
+        mentions.push({
+          id: userId,
+          name: userInfo.user.name || 'unknown',
+          realName: userInfo.user.real_name || 'Unknown User',
+        });
+      }
+    } catch (error) {
+      console.warn(`[extractUserMentions] Failed to fetch user info for ${userId}:`, error);
+    }
+  }
+
+  return mentions;
+}
+
+/**
  * Remove bot mention from message text
  */
 function cleanMessageText(text: string): string {
@@ -48,6 +78,19 @@ export async function handleMessage(context: MessageContext): Promise<void> {
   console.log(`[handleMessage] Message text: ${cleanText}`);
 
   try {
+    // Extract user mentions from the message
+    const mentions = await extractUserMentions(context.text, client);
+    const mentionContext = mentions.length > 0
+      ? `\n\nNote: This message mentions: ${mentions.map(m => `@${m.name} (${m.realName})`).join(', ')}`
+      : '';
+    
+    if (mentions.length > 0) {
+      console.log(`[handleMessage] Detected ${mentions.length} user mention(s):`, mentions.map(m => m.name));
+    }
+
+    // Prepare prompt with mention context
+    const promptWithContext = cleanText + mentionContext;
+
     // Get or create session for this thread
     const sessionManager = getSessionManager();
     const agentSessionId = await sessionManager.getOrCreateSession(sessionKey, {
@@ -97,7 +140,7 @@ export async function handleMessage(context: MessageContext): Promise<void> {
       // Race between agent query and timeout
       const processStream = (async () => {
         let chunkCount = 0;
-        for await (const chunk of queryClaudeAgentStream(cleanText, agentSessionId)) {
+        for await (const chunk of queryClaudeAgentStream(promptWithContext, agentSessionId)) {
           if (chunk.type === 'content' && chunk.text) {
             chunkCount++;
             console.log(`[handleMessage] Received chunk ${chunkCount}: ${chunk.text.length} chars`);
@@ -152,7 +195,7 @@ export async function handleMessage(context: MessageContext): Promise<void> {
       console.log(`[handleMessage] Retrying without session ID`);
       
       try {
-        for await (const chunk of queryClaudeAgentStream(cleanText, undefined)) {
+        for await (const chunk of queryClaudeAgentStream(promptWithContext, undefined)) {
           if (chunk.type === 'content' && chunk.text) {
             if (!hasContent) {
               progressIndicator.stop();

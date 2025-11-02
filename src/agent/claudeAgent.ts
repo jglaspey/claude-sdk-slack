@@ -45,6 +45,18 @@ export async function* queryClaudeAgentStream(
     // Get and create sessions directory
     const sessionsDir = getSessionsDir();
     
+    // Debug: List what's in the sessions directory
+    try {
+      const files = fs.readdirSync(sessionsDir);
+      console.log(`[queryClaudeAgent] Sessions directory contains ${files.length} items:`, files.slice(0, 10));
+      if (sessionId) {
+        const sessionExists = files.some(f => f.includes(sessionId));
+        console.log(`[queryClaudeAgent] Session ${sessionId} file exists: ${sessionExists}`);
+      }
+    } catch (err) {
+      console.error('[queryClaudeAgent] Error reading sessions directory:', err);
+    }
+    
     // Configure Agent SDK options
     const options = {
       // Use session resumption if we have a session ID

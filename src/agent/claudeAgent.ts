@@ -50,13 +50,39 @@ export async function* queryClaudeAgentStream(
     process.env.CLAUDE_SESSION_DIR = sessionsDir;
     console.log(`[queryClaudeAgent] Set CLAUDE_SESSION_DIR=${sessionsDir}`);
     
-    // Debug: List what's in the sessions directory
+    // Debug: Check symlink and sessions directory
     try {
+      // Check if symlink exists
+      const symlinkPath = '/home/appuser/.claude/sessions';
+      try {
+        const linkTarget = fs.readlinkSync(symlinkPath);
+        console.log(`[queryClaudeAgent] Symlink exists: ${symlinkPath} -> ${linkTarget}`);
+      } catch (e) {
+        console.log(`[queryClaudeAgent] Symlink does NOT exist at ${symlinkPath}`);
+      }
+      
+      // Check what's in sessions directory
       const files = fs.readdirSync(sessionsDir);
       console.log(`[queryClaudeAgent] Sessions directory contains ${files.length} items:`, files.slice(0, 10));
       if (sessionId) {
         const sessionExists = files.some(f => f.includes(sessionId));
         console.log(`[queryClaudeAgent] Session ${sessionId} file exists: ${sessionExists}`);
+      }
+      
+      // Also check home directory's .claude folder
+      const homeClaudePath = '/home/appuser/.claude';
+      if (fs.existsSync(homeClaudePath)) {
+        const homeFiles = fs.readdirSync(homeClaudePath);
+        console.log(`[queryClaudeAgent] ~/.claude directory contains:`, homeFiles);
+        
+        // If sessions subdirectory exists, check it
+        const homeSessionsPath = `${homeClaudePath}/sessions`;
+        if (fs.existsSync(homeSessionsPath)) {
+          const homeSessionFiles = fs.readdirSync(homeSessionsPath);
+          console.log(`[queryClaudeAgent] ~/.claude/sessions contains ${homeSessionFiles.length} items:`, homeSessionFiles.slice(0, 10));
+        }
+      } else {
+        console.log(`[queryClaudeAgent] ~/.claude directory does NOT exist`);
       }
     } catch (err) {
       console.error('[queryClaudeAgent] Error reading sessions directory:', err);

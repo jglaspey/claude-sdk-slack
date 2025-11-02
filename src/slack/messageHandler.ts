@@ -74,23 +74,57 @@ export async function handleMessage(context: MessageContext): Promise<void> {
 
     // Stream response from Claude Agent SDK
     let newSessionId = agentSessionId;
+    let retryWithoutSession = false;
 
-    for await (const chunk of queryClaudeAgentStream(cleanText, agentSessionId)) {
-      if (chunk.type === 'content' && chunk.text) {
-        // Add content and update Slack progressively
-        await updater.addContent(chunk.text);
+    try {
+      for await (const chunk of queryClaudeAgentStream(cleanText, agentSessionId)) {
+        if (chunk.type === 'content' && chunk.text) {
+          // Add content and update Slack progressively
+          await updater.addContent(chunk.text);
+        }
+
+        if (chunk.type === 'session' && chunk.sessionId) {
+          newSessionId = chunk.sessionId;
+        }
+
+        if (chunk.type === 'complete') {
+          // Final update without "thinking" indicator
+          await updater.finalize();
+          
+          const stats = updater.getStats();
+          console.log(`[handleMessage] Stream complete - ${stats.updateCount} updates, ${stats.contentLength} chars`);
+        }
       }
-
-      if (chunk.type === 'session' && chunk.sessionId) {
-        newSessionId = chunk.sessionId;
+    } catch (error: any) {
+      // Check if it's a "session not found" error
+      if (error.message?.includes('No conversation found with session ID') || 
+          error.message?.includes('session')) {
+        console.log(`[handleMessage] Session ${agentSessionId} not found, starting new session`);
+        retryWithoutSession = true;
+      } else {
+        throw error; // Re-throw if it's a different error
       }
+    }
 
-      if (chunk.type === 'complete') {
-        // Final update without "thinking" indicator
-        await updater.finalize();
-        
-        const stats = updater.getStats();
-        console.log(`[handleMessage] Stream complete - ${stats.updateCount} updates, ${stats.contentLength} chars`);
+    // Retry without session ID if the old session was missing
+    if (retryWithoutSession) {
+      await sessionManager.deleteSession(sessionKey);
+      console.log(`[handleMessage] Retrying without session ID`);
+      
+      for await (const chunk of queryClaudeAgentStream(cleanText, undefined)) {
+        if (chunk.type === 'content' && chunk.text) {
+          await updater.addContent(chunk.text);
+        }
+
+        if (chunk.type === 'session' && chunk.sessionId) {
+          newSessionId = chunk.sessionId;
+        }
+
+        if (chunk.type === 'complete') {
+          await updater.finalize();
+          const stats = updater.getStats();
+          console.log(`[handleMessage] Stream complete (new session) - ${stats.updateCount} updates, ${stats.contentLength} chars`);
+        }
       }
     }
 

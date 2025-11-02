@@ -111,6 +111,8 @@ Here's the content...
         ...process.env,
         // Ensure ANTHROPIC_API_KEY is passed to CLI
         ANTHROPIC_API_KEY: config.claude.apiKey,
+        // Explicitly pass CLAUDE_SESSION_DIR to child process
+        CLAUDE_SESSION_DIR: sessionsDir,
       },
       // Disable all file system tools since we're running as a service
       disallowedTools: [
